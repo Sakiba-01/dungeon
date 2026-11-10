@@ -124,7 +124,7 @@
     </button>
 </div>
 
-<!-- Class Select Screen (shown once, right after the first login) -->
+<!-- Class Select Screen -->
 <div id='class-screen' style='display:none' class='absolute inset-0 bg-gray-900/95 z-[100] flex-col items-center justify-start md:justify-center py-4 overflow-y-auto text-white backdrop-blur-sm pointer-events-auto transition-opacity duration-500'>
     <div class='text-4xl font-extrabold text-yellow-300 mb-2 text-center'>เลือกอาชีพของคุณ</div>
     <div class='text-gray-400 mb-6 text-sm text-center px-4'>เลือกได้ฟรีครั้งนี้ครั้งเดียว — หลังจากนี้ต้องเสียทองเพื่อเปลี่ยนอาชีพที่ร้านค้า</div>
@@ -187,7 +187,7 @@
 <div id="inventory-modal" class="modal">
     <div class="flex justify-between items-center mb-4 border-b border-gray-600 pb-2">
         <h2 class="text-xl font-bold">🎒 กระเป๋าสัมภาระ</h2>
-        <button onclick="toggleInventory()" class="text-gray-400 hover:text-white font-bold">X</button>
+        <button onclick="toggleInventory()" class="text-gray-400 hover:text-white font-bold text-xl">X</button>
     </div>
     <div class="text-sm text-gray-400 mb-2">คลิกขวาที่ไอเทมเพื่อสวมใส่/ถอดออก</div>
     <div class="grid grid-cols-2 gap-4 mb-4 bg-black/40 p-2 rounded">
@@ -198,9 +198,12 @@
 </div>
 
 <!-- Shop Modal -->
-<div id="shop-modal" class="modal text-center" style="min-width: 480px;">
-    <h2 class="text-2xl font-bold text-yellow-400 mb-2">🛒 ร้านค้าเวทมนตร์</h2>
-    <p class="text-gray-300 mb-4 text-sm">ใช้ทองเพื่อซื้อไอเทม หรือเลือกขายไอเทมที่คุณไม่ต้องการแล้ว</p>
+<div id="shop-modal" class="modal" style="min-width: 480px;">
+    <div class="flex justify-between items-center mb-4 border-b border-gray-600 pb-2">
+        <h2 class="text-2xl font-bold text-yellow-400">🛒 ร้านค้าเวทมนตร์</h2>
+        <button onclick="closeModals()" class="text-gray-400 hover:text-white font-bold text-xl">X</button>
+    </div>
+    <p class="text-gray-300 mb-4 text-sm text-center">ใช้ทองเพื่อซื้อไอเทม หรือเลือกขายไอเทมที่คุณไม่ต้องการแล้ว</p>
     
     <div class="flex flex-col gap-3">
         <div class="grid grid-cols-2 gap-2">
@@ -219,7 +222,7 @@
             <button onclick="buyShopItem('gachaWep')" class="bg-gray-800 hover:bg-yellow-600 border border-yellow-700 rounded p-2 transition text-sm font-bold">⚔️ สุ่มอาวุธ (1000 G)</button>
             <button onclick="buyShopItem('gachaArm')" class="bg-gray-800 hover:bg-yellow-600 border border-yellow-700 rounded p-2 transition text-sm font-bold">🛡️ สุ่มเกราะ (1000 G)</button>
         </div>
-        <button onclick="buyShopItem('heal')" class="bg-gray-700 hover:bg-red-600 border border-gray-500 rounded p-2 transition text-sm font-bold">❤️ ฟื้นฟูเลือดเต็ม (50 G)</button>
+        <button onclick="buyShopItem('heal')" class="bg-gray-700 hover:bg-red-600 border border-gray-500 rounded p-2 transition text-sm font-bold w-full">❤️ ฟื้นฟูเลือดเต็ม (50 G)</button>
     </div>
 
     <hr class="border-gray-600 my-4">
@@ -237,7 +240,7 @@
 <div id="char-modal" class="modal" style="min-width: 450px;">
     <div class="flex justify-between items-center mb-4 border-b border-gray-600 pb-2">
         <h2 class="text-xl font-bold">👤 สเตตัสและสกิล</h2>
-        <button onclick="toggleCharMenu()" class="text-gray-400 hover:text-white font-bold">X</button>
+        <button onclick="toggleCharMenu()" class="text-gray-400 hover:text-white font-bold text-xl">X</button>
     </div>
     
     <div class="flex gap-2 mb-3 items-center bg-gray-800 p-2 rounded">
@@ -285,7 +288,7 @@
 <div id="shadow-modal" class="modal" style="min-width: 420px;">
     <div class="flex justify-between items-center mb-4 border-b border-gray-600 pb-2">
         <h2 id="shadow-title" class="text-xl font-bold text-purple-300">🌑 คลังเงา</h2>
-        <button onclick="toggleShadowMenu()" class="text-gray-400 hover:text-white font-bold">X</button>
+        <button onclick="toggleShadowMenu()" class="text-gray-400 hover:text-white font-bold text-xl">X</button>
     </div>
     <div class="text-xs text-gray-400 mb-2">เงาที่ตายในสนามจะไม่หายจากคลัง (แลกด้วยมานา) ลบได้เฉพาะที่นี่</div>
     <div id="shadow-list" class="flex flex-col gap-2 overflow-y-auto max-h-[300px] pr-1"></div>
@@ -303,6 +306,75 @@
 </div>
 
 <script>
+    // ==========================================
+    // AUDIO SYSTEM (Web Audio API) - No External Files Needed
+    // ==========================================
+    let audioCtx = null;
+    function initAudio() {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+    
+    function playSFX(type) {
+        if (!audioCtx || audioCtx.state === 'suspended') return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        const t = audioCtx.currentTime;
+        
+        if (type === 'attack') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(250, t);
+            osc.frequency.exponentialRampToValueAtTime(80, t + 0.1);
+            gain.gain.setValueAtTime(0.2, t);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+            osc.start(t); osc.stop(t + 0.1);
+        } else if (type === 'mage_attack') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(600, t);
+            osc.frequency.exponentialRampToValueAtTime(200, t + 0.15);
+            gain.gain.setValueAtTime(0.2, t);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
+            osc.start(t); osc.stop(t + 0.15);
+        } else if (type === 'hit') {
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(150, t);
+            osc.frequency.exponentialRampToValueAtTime(40, t + 0.1);
+            gain.gain.setValueAtTime(0.3, t);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+            osc.start(t); osc.stop(t + 0.1);
+        } else if (type === 'monster_die') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(120, t);
+            osc.frequency.exponentialRampToValueAtTime(20, t + 0.3);
+            gain.gain.setValueAtTime(0.4, t);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+            osc.start(t); osc.stop(t + 0.3);
+        } else if (type === 'loot') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(1200, t);
+            osc.frequency.setValueAtTime(1800, t + 0.05);
+            gain.gain.setValueAtTime(0.2, t);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+            osc.start(t); osc.stop(t + 0.3);
+        } else if (type === 'skill') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(400, t);
+            osc.frequency.linearRampToValueAtTime(1000, t + 0.2);
+            gain.gain.setValueAtTime(0.2, t);
+            gain.gain.linearRampToValueAtTime(0.01, t + 0.4);
+            osc.start(t); osc.stop(t + 0.4);
+        } else if (type === 'dash') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(150, t);
+            osc.frequency.exponentialRampToValueAtTime(80, t + 0.2);
+            gain.gain.setValueAtTime(0.2, t);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.2);
+            osc.start(t); osc.stop(t + 0.2);
+        }
+    }
+
     // ==========================================
     // DATA & CONSTANTS
     // ==========================================
@@ -367,11 +439,11 @@
     const GATE_RANKS = ['E', 'D', 'C', 'B', 'A', 'S'];
     const GATE_COLORS = ['#6b7280', '#9ca3af', '#d1d5db', '#34d399', '#60a5fa', '#a78bfa'];
     const SPECIALS = [
-        { name: 'ดาบสังหารมังกร', special: 'execute', desc: 'ดาเมจ x2 ใส่ศัตรูที่เหลือเลือดต่ำกว่า 30%' },
-        { name: 'เคียวดูดวิญญาณ', special: 'lifesteal', desc: 'ดูดเลือด 6% ของดาเมจ' },
-        { name: 'หอกอัสนี', special: 'reach', desc: 'ระยะโจมตี +45' },
-        { name: 'คทาอาร์เคน', special: 'manasteal', desc: 'ฟื้นมานา 3 ต่อการโจมตี' },
-        { name: 'ดาบแห่งชะตา', special: 'crit', desc: 'คริติคอล 25% ดาเมจ x2.5' }
+        { name: 'ดาบสังหารมังกร', special: 'execute', desc: 'ดาเมจ x2 ใส่ศัตรูที่เหลือเลือดต่ำกว่า 30%', cls: ['knight', 'tank', 'monarch'] },
+        { name: 'เคียวดูดวิญญาณ', special: 'lifesteal', desc: 'ดูดเลือด 6% ของดาเมจ', cls: ['knight', 'monarch'] },
+        { name: 'หอกอัสนี', special: 'reach', desc: 'ระยะโจมตี +45', cls: ['knight', 'tank', 'monarch'] },
+        { name: 'คทาอาร์เคน', special: 'manasteal', desc: 'ฟื้นมานา 3 ต่อการโจมตี', cls: ['mage'] },
+        { name: 'ดาบแห่งชะตา', special: 'crit', desc: 'คริติคอล 25% ดาเมจ x2.5', cls: ['knight', 'tank', 'monarch'] }
     ];
 
     function fmtTime(s) { 
@@ -436,7 +508,11 @@
     function makeSpecialWeapon(fromChest) {
         const d = gameState.dungeon || { tier: 0, time: 0, floors: 3 };
         const rank = Math.random() < 0.2 ? RANKS[6] : RANKS[5];
-        const def = SPECIALS[Math.floor(Math.random() * SPECIALS.length)];
+        
+        let available = SPECIALS.filter(s => s.cls.includes(playerStats.cls));
+        if(available.length === 0) available = SPECIALS; // Fallback
+        
+        const def = available[Math.floor(Math.random() * available.length)];
         return { id: Date.now() + Math.random(), name: `${def.name} [${rank.name}]`, type: 'weapon', rank, special: def.special, desc: def.desc, unique: true,
             stat: Math.floor(6 * rank.mult * (1 + d.tier * 0.3)) + Math.floor(Math.random() * 6) };
     }
@@ -467,6 +543,9 @@
         if (got) playerStats.inventory.push(got);
         const gotA = Math.random() < 0.3 ? makeSpecialArmor() : null;
         if (gotA) playerStats.inventory.push(gotA);
+        
+        playSFX('loot');
+        
         if (got) setTimeout(() => showLootReveal(got), 900);
         if (gotA) setTimeout(() => showLootReveal(gotA), 1600);
         saveGame();
@@ -548,13 +627,11 @@
     }
     function removeCorpse(c) { if (c.mesh) dynGroup.remove(c.mesh); corpses = corpses.filter(x => x !== c); }
     
-    // Skill 1: Extract Shadow (Updated for AoE based on Level)
     function extractShadow(sk) {
         let r = sk.level >= 2 ? 60 + sk.level * 30 : 60; // Lvl1=60, Lvl2=120, Lvl3=150, Lvl4=180, Lvl5=210
         let targets = corpses.filter(c => Math.hypot(c.x - player.x, c.y - player.y) < r);
         
         if (sk.level < 2 && targets.length > 0) {
-            // Level 1: Only closest corpse
             targets = [targets.reduce((a, b) => Math.hypot(a.x - player.x, a.y - player.y) < Math.hypot(b.x - player.x, b.y - player.y) ? a : b)];
         }
         
@@ -604,14 +681,20 @@
         if (modal.style.display === 'block') { modal.style.display = 'none'; gameState.isPaused = false; }
         else { closeModals(); modal.style.display = 'block'; gameState.isPaused = true; renderShadowMenu(); }
     }
+    
     function renderShadowMenu() {
         document.getElementById('shadow-title').innerText = `🌑 คลังเงา (${playerStats.shadows.length}/${shadowCap()})`;
         const out = new Set(allies.filter(a => !a.isDead).map(a => a.sh.id));
-        document.getElementById('shadow-list').innerHTML = playerStats.shadows.length ? playerStats.shadows.map(s => {
+        
+        // เรียงเงาจากมากไปน้อย (คิดพลังจาก HP + ATK)
+        const sortedShadows = [...playerStats.shadows].sort((a, b) => (b.baseHp + b.baseAtk) - (a.baseHp + a.baseAtk));
+        
+        document.getElementById('shadow-list').innerHTML = sortedShadows.length ? sortedShadows.map(s => {
             const st = shadowStats(s);
             return `<div class="flex justify-between items-center bg-gray-800 p-2 rounded"><div class="text-sm"><span class="text-xl">${s.emoji}</span> <span class="font-bold text-purple-300">${s.name}</span>${out.has(s.id) ? ' <span class="text-green-400 text-xs">(อยู่ในสนาม)</span>' : ''}<span class="text-gray-400 block text-xs">❤️ ${st.hp} | ⚔️ ${st.atk}</span></div><button onclick="deleteShadow(${s.id})" class="bg-red-700 hover:bg-red-600 px-2 py-1 rounded text-xs font-bold">ลบ</button></div>`;
         }).join('') : '<div class="text-gray-400 text-sm">ยังไม่มีเงา — ฆ่ามอนสเตอร์แล้วใช้ [1] สกัดเงาที่ศพ</div>';
     }
+    
     function deleteShadow(id) {
         playerStats.shadows = playerStats.shadows.filter(s => s.id !== id);
         allies.forEach(a => { if (a.sh.id === id) { a.isDead = true; if (a.mesh) { dynGroup.remove(a.mesh); a.mesh = null; } } });
@@ -741,7 +824,7 @@
     const SPEC_COL = { execute: 0xef4444, lifesteal: 0x4ade80, reach: 0x7dd3fc, manasteal: 0x22d3ee, crit: 0xfbbf24 };
     const STYLE_COL = { dragon: 0xef4444, shadow: 0x8b5cf6, thunder: 0x38bdf8 };
     const WK = ['sword', 'axe', 'mace', 'dagger'], AK = ['plate', 'leather', 'robe'];
-    const KIND_NAME = { sword: 'ดาบ', axe: 'ขวาน', mace: 'กระบอง', dagger: 'กริช', plate: 'เกราะเหล็ก', leather: 'เกราะหนัง', robe: 'ชุดคลุมเวท' };
+    const KIND_NAME = { sword: 'ดาบ', axe: 'ขวาน', mace: 'กระบอง', dagger: 'กริชเวท/คทา', plate: 'เกราะเหล็ก', leather: 'เกราะหนัง', robe: 'ชุดคลุมเวท' };
     const RANK_ADJ = ['ขึ้นสนิม', 'ธรรมดา', 'ชั้นดี', 'เงินวิเศษ', 'มิธริล', 'ออริคัลคัม', 'เทพ'];
     const SPECIAL_ARMORS = [
         { name: 'เกราะเกล็ดมังกร', style: 'dragon', desc: 'ปีกและหางมังกร DEF สูงพิเศษ' },
@@ -749,9 +832,24 @@
         { name: 'เกราะจักรพรรดิอัสนี', style: 'thunder', desc: 'ปีกทองและสายฟ้า DEF สูงพิเศษ' }
     ];
     let lootExtra = '';
-    function pickKind(type) { const a = type === 'weapon' ? WK : AK; return a[Math.floor(Math.random() * a.length)]; }
+    
+    // ปรับการสุ่มไอเทมตามอาชีพที่เลือก
+    function pickKind(type) { 
+        const cls = playerStats.cls || 'knight';
+        let pool = [];
+        if (type === 'weapon') {
+            if (cls === 'tank') pool = ['mace', 'sword'];
+            else if (cls === 'mage') pool = ['dagger']; // dagger จะถูกมองว่าเป็นอาวุธเวทหรือคทาสั้น
+            else pool = ['sword', 'axe']; // Knight & Monarch
+        } else {
+            if (cls === 'tank') pool = ['plate'];
+            else if (cls === 'mage') pool = ['robe'];
+            else pool = ['plate', 'leather']; // Knight & Monarch
+        }
+        return pool[Math.floor(Math.random() * pool.length)];
+    }
+    
     function rollMpDrop(e) {
-        // ยาฟื้นมานา: ดรอปอิสระจากยาฮีลเลือด โอกาส 25% จากมอนสเตอร์ทั่วไป
         if (Math.random() < 0.25) potions.push({ x: e.x + 18, y: e.y + 10, mp: Math.max(10, Math.floor(playerStats.maxMana * 0.15)), mesh: null });
     }
     function makeSpecialArmor() {
@@ -1611,7 +1709,13 @@
     });
 
     window.addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; });
-    window.addEventListener('mousedown', (e) => { if (e.button === 0 && e.target === canvas) { mouse.left = true; if (!gameState.isPaused) player.attack(); } });
+    window.addEventListener('mousedown', (e) => { 
+        if (e.button === 0 && e.target === canvas) { 
+            mouse.left = true; 
+            if (!gameState.isPaused) player.attack(); 
+            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+        } 
+    });
     window.addEventListener('mouseup', () => mouse.left = false);
     document.addEventListener('contextmenu', e => { if (e.target === canvas) e.preventDefault(); });
 
@@ -1672,6 +1776,7 @@
 
                 if (keys.space && this.dashCooldown <= 0) {
                     this.dashTimer = 0.2; this.dashCooldown = 1.0; this.invulnTimer = 0.3;
+                    playSFX('dash');
                 }
             }
 
@@ -1691,6 +1796,7 @@
             if (this.attackTimer > 0) return;
             if (playerStats.cls === 'mage') { this.mageAttack(); return; }
             this.attackTimer = 0.3;
+            playSFX('attack');
 
             const attackRange = 85 + ((playerStats.equipped.weapon && playerStats.equipped.weapon.special === 'reach') ? 45 : 0);
             const attackArc = Math.PI / 2;
@@ -1720,6 +1826,8 @@
 
         mageAttack() {
             this.attackTimer = 0.3;
+            playSFX('mage_attack');
+            
             let best = null, bd = 1e9;
             enemies.forEach(e => {
                 if (e.isDead) return;
@@ -1737,12 +1845,13 @@
             const sk = playerStats.skills[idx];
             if (!sk || sk.level === 0 || sk.cd > 0 || gameState.isPaused) return;
             
-            // ยกเว้น domain ไม่ต้องเช็คตอนกด เพราะมันเป็นสลับเปิดปิดและกินเรื่อยๆ
             if (playerStats.mana < sk.mp && sk.fx !== 'domain') { showMessage('มานาไม่พอ!', '#60a5fa'); return; }
             
             const atk = getTotalAtk(), lv = sk.level;
             const inR = (x, y, r) => enemies.filter(e => !e.isDead && Math.hypot(e.x - x, e.y - y) < r + e.radius);
             let cost = sk.fx === 'domain' ? 0 : sk.mp;
+            
+            playSFX('skill');
             
             switch (sk.fx) {
                 case 'cleave':
@@ -1830,6 +1939,7 @@
         takeDamage(amount) {
             if (this.invulnTimer > 0) return;
             
+            playSFX('hit');
             let actualDamage = Math.max(1, amount - getTotalDef());
             playerStats.hp -= actualDamage;
             this.invulnTimer = 1.0;
@@ -1843,7 +1953,7 @@
         die() {
             showMessage(`คุณตายในดันเจี้ยน... ฟื้นคืนชีพที่เมืองศูนย์กลาง`, '#f87171');
             playerStats.hp = playerStats.maxHp;
-            this.domainActive = false; // ปิดโดเมนเมื่อตาย
+            this.domainActive = false;
             loadFloor(0);
             saveGame();
             updateUI();
@@ -1894,18 +2004,19 @@
 
         takeDamage(amount) {
             this.hp -= amount; this.hitFlashTimer = 0.1;
+            playSFX('hit');
             showFloatingText(amount.toString(), this.x, this.y - this.radius - 10, '#ffffff');
             if (this.hp <= 0) this.die();
         }
 
         die() {
             this.isDead = true;
+            playSFX('monster_die');
             if (playerStats.cls === 'monarch') corpses.push({ x: this.x, y: this.y, emoji: this.emoji, isBoss: this.isBoss, radius: this.radius, maxHp: this.maxHp, atk: this.atk, speed: this.speed, ttl: 40, mesh: null });
             
             playerStats.gold += this.goldReward;
             if (this.isBoss) bossLoot(this);
             else if (rollMpDrop(this), Math.random() < 0.25) {
-                // ดรอปยารักษา (Potion) โอกาส 25%
                 potions.push({ 
                     x: this.x, y: this.y, 
                     heal: Math.max(15, Math.floor(playerStats.maxHp * 0.1)), 
@@ -1978,6 +2089,7 @@
                 if (Math.hypot(player.x - this.x, player.y - this.y) < 60 && !this.used) {
                     if (this.open) {
                         this.used = true;
+                        playSFX('loot');
                         setTimeout(() => {
                             if (isBossFloor(gameState.floor)) { completeDungeon(); }
                             else loadFloor(gameState.floor + 1);
@@ -2114,6 +2226,9 @@
         
         playerStats.gold += goldFound;
         playerStats.inventory.push(item);
+        
+        playSFX('loot');
+        
         if (rIdx(item) >= 4) setTimeout(() => showLootReveal(item), 200);
         
         let chestBonus = '';
@@ -2339,7 +2454,6 @@
         const container = document.getElementById('shop-sell-list');
         const eq = [playerStats.equipped.weapon?.id, playerStats.equipped.armor?.id];
         
-        // กรองเอาไอเทมที่ไม่ได้สวมใส่ออกมา
         let sellableItems = playerStats.inventory.filter(it => !eq.includes(it.id));
         
         if (sellableItems.length === 0) {
@@ -2363,7 +2477,6 @@
     }
 
     function sellSpecificItem(itemId) {
-        // ค้นหา Index ของไอเทม
         let idx = playerStats.inventory.findIndex(it => it.id.toString() === itemId.toString());
         if (idx !== -1) {
             let item = playerStats.inventory[idx];
@@ -2374,10 +2487,11 @@
             
             spawnParticles(player.x, player.y, '#facc15', 10);
             showMessage(`ขาย ${item.name} ได้รับ ${price} ทอง`, '#facc15');
+            playSFX('loot');
             
             saveGame();
             updateUI();
-            renderShopSellList(); // รีเฟรชรายการที่ขายได้
+            renderShopSellList();
         }
     }
 
@@ -2396,7 +2510,7 @@
         if (type === 'gachaWep' || type === 'gachaArm') cost = 1000;
         if (type === 'heal') cost = 50;
 
-        if (amount < 1) amount = 1; // ป้องกันใส่ค่าติดลบหรือ 0
+        if (amount < 1) amount = 1;
 
         let totalCost = cost * amount;
 
@@ -2416,6 +2530,7 @@
             saveGame();
             updateUI(); 
             spawnParticles(player.x, player.y, '#34d399', 15);
+            playSFX('loot');
             
             let msg = type.includes('gacha') ? "สุ่มอุปกรณ์สำเร็จ! เปิดกระเป๋าเพื่อดู" : (type === 'heal' ? "ฟื้นฟูเลือดสำเร็จ!" : `ซื้อสำเร็จ ${amount} พอยต์!`);
             showMessage(msg, '#34d399');
@@ -2512,6 +2627,7 @@
                     else playerStats.hp = Math.min(playerStats.maxHp, playerStats.hp + p.heal);
                     spawnParticles(p.x, p.y, p.mp ? '#38bdf8' : '#f43f5e', 20);
                     showFloatingText(p.mp ? `+${p.mp} MP` : `+${p.heal}`, p.x, p.y - 30, p.mp ? '#38bdf8' : '#f43f5e');
+                    playSFX('loot');
                     updateUI();
                     if (p.mesh) dynGroup.remove(p.mesh);
                     potions.splice(i, 1);
@@ -2546,6 +2662,8 @@
             return;
         }
 
+        initAudio(); // Initialize AudioContext on user gesture
+
         let accounts = JSON.parse(localStorage.getItem('dungeon_accounts') || '{}');
         
         if (accounts[nameInput]) {
@@ -2553,11 +2671,9 @@
                 alert("❌ รหัสผ่านไม่ถูกต้อง! กรุณาลองใหม่อีกครั้ง");
                 return;
             }
-            // โหลดข้อมูลเก่า
             playerStats = accounts[nameInput].stats;
             recolorPlayer(playerStats.cls);
         } else {
-            // สร้างไอดีใหม่
             playerStats.name = nameInput;
             playerStats.classChosen = false;
             accounts[nameInput] = { pin: pinInput, stats: playerStats };
@@ -2625,6 +2741,7 @@
         allies = [];
         player.domainActive = false;
         spawnParticles(player.x, player.y, '#22d3ee', 40);
+        playSFX('skill');
         showMessage(`🎭 เปลี่ยนเป็น ${CLASSES[id].name} สำเร็จ! (-${cost} G${refund ? ', คืนสกิลพอยต์ ' + refund : ''})`, '#22d3ee');
         saveGame(); updateUI(); renderShopClassList();
     }
