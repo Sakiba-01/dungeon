@@ -79,6 +79,12 @@
         .skill-key { position: absolute; top: -10px; left: -10px; background: #3b82f6; width: 20px; height: 20px; border-radius: 50%; font-size: 12px; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 1px solid #fff; }
         .skill-lock { position: absolute; inset: 0; background: rgba(0,0,0,0.8); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #ef4444; }
         
+        .skill-lv { position: absolute; bottom: -9px; right: -7px; background: #7c3aed; color: #fff; font-size: 10px; font-weight: bold; padding: 0 5px; border-radius: 9px; border: 1px solid #fff; line-height: 15px; z-index: 11; white-space: nowrap; }
+        .inv-slot img { width: 54px; height: 54px; object-fit: contain; pointer-events: none; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.6)); }
+        .slot-rank { position: absolute; bottom: 1px; left: 4px; font-size: 10px; font-weight: bold; text-shadow: 0 1px 2px #000; pointer-events: none; }
+        @keyframes uniqGlow { 0%, 100% { box-shadow: 0 0 5px var(--c), inset 0 0 8px var(--c); } 50% { box-shadow: 0 0 15px var(--c), inset 0 0 14px var(--c); } }
+        .inv-slot.uniq { animation: uniqGlow 2s ease-in-out infinite; }
+
         /* Scrollbar styles for modals */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); border-radius: 4px; }
@@ -110,12 +116,20 @@
         </div>
     </div>
     
-    <div class="text-sm text-gray-400 mb-2">เลือกอาชีพของคุณ (สำหรับไอดีใหม่ - เริ่มต้นด้วย 5,000 ทอง!)</div>
-    <div id="class-cards" class="flex gap-3 mb-6 flex-wrap justify-center px-4"></div>
+    <div class="text-xs text-gray-500 mb-4 text-center px-4">* ไอดีใหม่เริ่มต้นด้วย 5,000 ทอง และจะได้เลือกอาชีพหลังเข้าสู่ระบบ (เลือกฟรีครั้งเดียว)</div>
+    
 
     <button onclick="startGame()" class="px-10 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 rounded-xl text-2xl font-bold transition-all transform hover:scale-110 shadow-[0_0_25px_rgba(59,130,246,0.6)] hover:shadow-[0_0_40px_rgba(147,51,234,0.9)] border border-blue-400/30">
-        เข้าสู่เกม (START GAME)
+        เข้าสู่ระบบ (LOGIN)
     </button>
+</div>
+
+<!-- Class Select Screen (shown once, right after the first login) -->
+<div id='class-screen' style='display:none' class='absolute inset-0 bg-gray-900/95 z-[100] flex-col items-center justify-start md:justify-center py-4 overflow-y-auto text-white backdrop-blur-sm pointer-events-auto transition-opacity duration-500'>
+    <div class='text-4xl font-extrabold text-yellow-300 mb-2 text-center'>เลือกอาชีพของคุณ</div>
+    <div class='text-gray-400 mb-6 text-sm text-center px-4'>เลือกได้ฟรีครั้งนี้ครั้งเดียว — หลังจากนี้ต้องเสียทองเพื่อเปลี่ยนอาชีพที่ร้านค้า</div>
+    <div id='class-cards' class='flex gap-3 mb-6 flex-wrap justify-center px-4'></div>
+    <button onclick='confirmClass()' class='px-10 py-4 bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-400 hover:to-orange-500 rounded-xl text-2xl font-bold transition-all transform hover:scale-105 shadow-lg border border-yellow-300/40'>ยืนยันอาชีพ ✔</button>
 </div>
 
 <!-- HUD Layer -->
@@ -210,6 +224,9 @@
 
     <hr class="border-gray-600 my-4">
 
+    <h3 class='text-lg font-bold text-cyan-300 mb-2 text-left'>🎭 เปลี่ยนอาชีพ</h3>
+    <div id='shop-class-list' class='flex flex-col gap-2 mb-4 bg-black/40 p-2 rounded border border-gray-700'></div>
+    <hr class='border-gray-600 my-4'>
     <h3 class="text-lg font-bold text-orange-400 mb-2 text-left">💰 เลือกขายไอเทม</h3>
     <div id="shop-sell-list" class="flex flex-col gap-2 max-h-[160px] overflow-y-auto bg-black/40 p-2 rounded border border-gray-700"></div>
     
@@ -259,7 +276,7 @@
         <!-- Skills -->
         <div class="bg-black/40 p-3 rounded">
             <h3 class="font-bold text-purple-400 mb-2">สกิล (พอยต์: <span id="skill-pts">0</span>)</h3>
-            <div id="skill-list-container" class="flex flex-col gap-2 overflow-y-auto max-h-[160px] pr-1"></div>
+            <div id="skill-list-container" class="flex flex-col gap-2 overflow-y-auto max-h-[280px] pr-1"></div>
         </div>
     </div>
 </div>
@@ -503,7 +520,7 @@
     
     function renderClassCards() {
         document.getElementById('class-cards').innerHTML = Object.entries(CLASSES).map(([id, c]) =>
-            `<button onclick="selectClass('${id}')" class="w-40 p-3 rounded-xl border-2 text-left transition ${playerStats.cls === id ? 'border-yellow-400 bg-white/15 scale-105' : 'border-gray-600 bg-black/40 hover:border-gray-300'}"><div class="text-3xl">${c.icon}</div><div class="font-bold ${c.color}">${c.name}</div><div class="text-xs text-gray-300">${c.desc}</div></button>`).join('');
+            `<button onclick="selectClass('${id}')" class="w-40 p-3 rounded-xl border-2 text-left transition ${playerStats.cls === id ? 'border-yellow-400 bg-white/15 scale-105' : 'border-gray-600 bg-black/40 hover:border-gray-300'}"><div class="text-3xl">${c.icon}</div><div class="font-bold ${c.color}">${c.name}</div><div class="text-xs text-gray-300">${c.desc}</div><div class="text-xs text-gray-400 mt-1">❤️${c.hp} ⚔️${c.atk} 🛡️${c.def} 💧${c.mp}</div><div class="text-base mt-1">${c.skills.map(s => s.icon).join(' ')}</div></button>`).join('');
     }
     
     function selectClass(id) { applyClass(id); renderClassCards(); }
@@ -733,6 +750,10 @@
     ];
     let lootExtra = '';
     function pickKind(type) { const a = type === 'weapon' ? WK : AK; return a[Math.floor(Math.random() * a.length)]; }
+    function rollMpDrop(e) {
+        // ยาฟื้นมานา: ดรอปอิสระจากยาฮีลเลือด โอกาส 25% จากมอนสเตอร์ทั่วไป
+        if (Math.random() < 0.25) potions.push({ x: e.x + 18, y: e.y + 10, mp: Math.max(10, Math.floor(playerStats.maxMana * 0.15)), mesh: null });
+    }
     function makeSpecialArmor() {
         const d = gameState.dungeon || { tier: 0 };
         const rank = RANKS[6], def = SPECIAL_ARMORS[Math.floor(Math.random() * SPECIAL_ARMORS.length)];
@@ -932,6 +953,55 @@
         }
         g.userData.tick = t => tick.forEach(f => f(t));
         return g;
+    }
+
+    // ---------- Inventory icons rendered from the real 3D models ----------
+    let _iconR = null, _iconScene = null, _iconCam = null;
+    const _iconCache = {};
+    function itemIconKey(it) {
+        const k = it.special || it.style || it.kind || ((it.type === 'weapon' ? WK : AK)[Math.floor(Math.abs(it.id)) % (it.type === 'weapon' ? 4 : 3)]);
+        return [it.type, k, it.rank.name].join('|');
+    }
+    function itemIcon(it) {
+        const key = itemIconKey(it);
+        if (_iconCache[key] !== undefined) return _iconCache[key];
+        let url = null;
+        try {
+            if (!_iconR) {
+                _iconR = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+                _iconR.setSize(128, 128); _iconR.setClearColor(0x000000, 0);
+                _iconScene = new THREE.Scene();
+                _iconScene.add(new THREE.AmbientLight(0xffffff, 0.75));
+                const dl = new THREE.DirectionalLight(0xffffff, 0.9); dl.position.set(200, 160, 120); _iconScene.add(dl);
+                const bl = new THREE.DirectionalLight(0x88aaff, 0.45); bl.position.set(-80, -40, 200); _iconScene.add(bl);
+                _iconCam = new THREE.OrthographicCamera(-1, 1, 1, -1, -1000, 1000);
+            }
+            const holder = new THREE.Group();
+            let model;
+            if (it.type === 'weapon') { model = buildWeapon(it); model.rotation.set(-0.75, 0, Math.PI / 2); }
+            else model = buildArmor(it, true);
+            if (model.userData.tick) model.userData.tick(1.0);
+            holder.add(model); _iconScene.add(holder);
+            holder.updateMatrixWorld(true);
+            const box = new THREE.Box3().setFromObject(holder), c = box.getCenter(new THREE.Vector3()), sz = box.getSize(new THREE.Vector3());
+            const half = Math.max(sz.y, sz.z, 20) / 2 * 1.12;
+            Object.assign(_iconCam, { left: -half, right: half, top: half, bottom: -half });
+            _iconCam.updateProjectionMatrix();
+            _iconCam.position.set(c.x + 300, c.y, c.z); _iconCam.up.set(0, 1, 0); _iconCam.lookAt(c);
+            _iconR.render(_iconScene, _iconCam);
+            url = _iconR.domElement.toDataURL('image/png');
+            _iconScene.remove(holder);
+            holder.traverse(o => { if (o.geometry) o.geometry.dispose(); });
+        } catch (err) { url = null; }
+        return (_iconCache[key] = url);
+    }
+    function itemIconHtml(it) {
+        const u = itemIcon(it);
+        return u ? `<img src="${u}" alt="">` : `<div class="icon rank-${it.rank.name}">${it.type === 'weapon' ? '⚔️' : '🛡️'}</div>`;
+    }
+    function miniIcon(it) {
+        const u = itemIcon(it);
+        return u ? `<img src="${u}" alt="" style="width:30px;height:30px;display:inline-block;vertical-align:middle;margin-right:4px">` : (it.type === 'weapon' ? '⚔️ ' : '🛡️ ');
     }
 
     // ---------- Equip sync, loot reveal, environment animation ----------
@@ -1463,8 +1533,9 @@
         potions.forEach(p => {
             if (!p.mesh) {
                 const geom = new THREE.OctahedronGeometry(8);
-                const mat = M(0xf43f5e, { emissive: 0xe11d48, emissiveIntensity: 0.8 });
+                const mat = p.mp ? M(0x38bdf8, { emissive: 0x0ea5e9, emissiveIntensity: 0.9 }) : M(0xf43f5e, { emissive: 0xe11d48, emissiveIntensity: 0.8 });
                 p.mesh = mk(geom, mat);
+                if (p.mp) { const rg = new THREE.Mesh(new THREE.TorusGeometry(12, 1.2, 6, 20), new THREE.MeshBasicMaterial({ color: 0x7dd3fc })); rg.rotation.x = Math.PI / 2; p.mesh.add(rg); }
                 dynGroup.add(p.mesh);
             }
             p.mesh.position.set(p.x, 15 + Math.sin(t * 4 + p.x) * 5, p.y);
@@ -1833,7 +1904,7 @@
             
             playerStats.gold += this.goldReward;
             if (this.isBoss) bossLoot(this);
-            else if (Math.random() < 0.25) {
+            else if (rollMpDrop(this), Math.random() < 0.25) {
                 // ดรอปยารักษา (Potion) โอกาส 25%
                 potions.push({ 
                     x: this.x, y: this.y, 
@@ -2108,7 +2179,7 @@
     }
 
     function updateUI() {
-        document.getElementById('ui-player-name').innerText = playerStats.name;
+        document.getElementById('ui-player-name').innerText = ((CLASSES[playerStats.cls] || {}).icon || '') + ' ' + playerStats.name;
         document.getElementById('ui-gold').innerText = playerStats.gold;
         
         let hpPct = Math.max(0, (playerStats.hp / playerStats.maxHp) * 100);
@@ -2138,7 +2209,7 @@
                 <div class="skill-slot" title="${skill.name} (Lv.${skill.level}) - ${skill.desc}">
                     <div class="skill-key">${i+1}</div>
                     ${skill.icon}
-                    ${isLocked ? '<div class="skill-lock">🔒</div>' : ''}
+                    ${isLocked ? '<div class="skill-lock">🔒</div>' : `<div class="skill-lv">Lv.${skill.level}</div>`}
                     <div id="skill-cd-bar-${i}" class="skill-cd"></div>
                     <div id="skill-cd-text-${i}" class="absolute inset-0 flex items-center justify-center text-white font-bold drop-shadow-md text-sm z-10 pointer-events-none"></div>
                 </div>
@@ -2227,8 +2298,8 @@
         const container = document.getElementById('inv-container');
         container.innerHTML = '';
         const w = playerStats.equipped.weapon, a = playerStats.equipped.armor;
-        document.getElementById('equip-weapon').innerHTML = w ? `<span class="rank-${w.rank.name}">${w.name} (+${w.stat})</span>` : 'ไม่มี';
-        document.getElementById('equip-armor').innerHTML = a ? `<span class="rank-${a.rank.name}">${a.name} (+${a.stat})</span>` : 'ไม่มี';
+        document.getElementById('equip-weapon').innerHTML = w ? `<span class="inline-flex items-center rank-${w.rank.name}">${miniIcon(w)}${w.name} (+${w.stat})</span>` : 'ไม่มี';
+        document.getElementById('equip-armor').innerHTML = a ? `<span class="inline-flex items-center rank-${a.rank.name}">${miniIcon(a)}${a.name} (+${a.stat})</span>` : 'ไม่มี';
 
         const totalSlots = Math.max(16, playerStats.inventory.length + (4 - playerStats.inventory.length % 4));
         for (let i = 0; i < totalSlots; i++) {
@@ -2236,8 +2307,12 @@
             const slot = document.createElement('div'); slot.className = 'inv-slot';
             if (item) {
                 const isEquipped = (playerStats.equipped.weapon?.id === item.id) || (playerStats.equipped.armor?.id === item.id);
-                slot.innerHTML = `<div class="icon rank-${item.rank.name}">${item.type === 'weapon' ? '⚔️' : '🛡️'}</div>${isEquipped ? '<div class="equipped-indicator">E</div>' : ''}`;
+                slot.innerHTML = `${itemIconHtml(item)}<div class="slot-rank rank-${item.rank.name}">${item.rank.name}</div>${isEquipped ? '<div class="equipped-indicator">E</div>' : ''}`;
                 slot.title = `${item.name}\n${item.type === 'weapon' ? 'ATK' : 'DEF'} +${item.stat}${item.desc ? '\n★ ' + item.desc : ''}`;
+                slot.style.borderColor = item.rank.color;
+                slot.style.background = `radial-gradient(circle at 50% 40%, ${item.rank.color}33, rgba(0,0,0,0.55) 70%)`;
+                slot.style.setProperty('--c', item.rank.color);
+                if (item.unique) slot.classList.add('uniq');
                 slot.addEventListener('contextmenu', (e) => { e.preventDefault(); equipItem(item); });
             }
             container.appendChild(slot);
@@ -2256,6 +2331,7 @@
         gameState.isPaused = true;
         gameState.shopOpen = true;
         document.getElementById('shop-modal').style.display = 'block';
+        _classPending = null; renderShopClassList();
         renderShopSellList();
     }
 
@@ -2276,7 +2352,7 @@
             return `
             <div class="flex justify-between items-center bg-gray-800 p-2 rounded">
                 <div class="text-left max-w-[200px]">
-                    <div class="font-bold text-sm truncate rank-${it.rank.name}">${it.type === 'weapon' ? '⚔️' : '🛡️'} ${it.name}</div>
+                    <div class="font-bold text-sm truncate rank-${it.rank.name}">${miniIcon(it)}${it.name}</div>
                     <div class="text-xs text-gray-400">สเตตัส +${it.stat}</div>
                 </div>
                 <button onclick="sellSpecificItem('${it.id}')" class="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-1 px-3 rounded text-sm whitespace-nowrap transition transform hover:scale-105">
@@ -2371,11 +2447,14 @@
         playerStats.skills.forEach((skill, i) => {
             skillContainer.innerHTML += `
                 <div class="flex justify-between items-center bg-gray-800 p-2 rounded">
-                    <div class="text-sm w-3/4">
+                    <div class="text-sm flex-1 min-w-0">
                         <span class="font-bold text-yellow-300">[${i+1}] ${skill.icon} ${skill.name}</span>
-                        <span class="text-gray-400 block text-xs overflow-hidden text-ellipsis whitespace-nowrap">${skill.desc} (Lv.${skill.level})</span>
+                        <span class="ml-1 px-2 rounded-full text-xs font-bold ${skill.level > 0 ? 'bg-purple-700 text-white' : 'bg-gray-700 text-gray-400'}">${skill.level > 0 ? 'Lv.' + skill.level : 'ยังไม่ปลดล็อก'}</span>
+                        <div class="flex items-center gap-0.5 my-1" title="เลเวลสกิล ${skill.level}">${Array.from({ length: 10 }, (_, n) => `<span class="inline-block w-3 h-1.5 rounded-sm ${n < skill.level ? 'bg-purple-400' : 'bg-gray-600'}"></span>`).join('')}${skill.level > 10 ? `<span class="text-xs text-purple-300 ml-1">+${skill.level - 10}</span>` : ''}</div>
+                        <span class="text-gray-400 block text-xs">${skill.desc}</span>
+                        <span class="text-xs text-cyan-300">คูลดาวน์ ${skill.maxCd} วิ</span>
                     </div>
-                    <button onclick="upgradeSkill(${i})" class="${playerStats.skillPoints > 0 ? 'bg-purple-600 hover:bg-purple-500' : 'bg-gray-600 cursor-not-allowed'} px-3 py-1 rounded text-xs font-bold text-white transition w-1/4 min-w-fit">
+                    <button onclick="upgradeSkill(${i})" class="${playerStats.skillPoints > 0 ? 'bg-purple-600 hover:bg-purple-500' : 'bg-gray-600 cursor-not-allowed'} px-3 py-1 rounded text-xs font-bold text-white transition shrink-0 whitespace-nowrap" title="อัพเป็น Lv.${skill.level + 1}">
                         อัพเกรด
                     </button>
                 </div>
@@ -2429,9 +2508,10 @@
             for (let i = potions.length - 1; i >= 0; i--) {
                 let p = potions[i];
                 if (Math.hypot(player.x - p.x, player.y - p.y) < player.radius + 20) {
-                    playerStats.hp = Math.min(playerStats.maxHp, playerStats.hp + p.heal);
-                    spawnParticles(p.x, p.y, '#f43f5e', 20);
-                    showFloatingText(`+${p.heal}`, p.x, p.y - 30, '#f43f5e');
+                    if (p.mp) playerStats.mana = Math.min(playerStats.maxMana, playerStats.mana + p.mp);
+                    else playerStats.hp = Math.min(playerStats.maxHp, playerStats.hp + p.heal);
+                    spawnParticles(p.x, p.y, p.mp ? '#38bdf8' : '#f43f5e', 20);
+                    showFloatingText(p.mp ? `+${p.mp} MP` : `+${p.heal}`, p.x, p.y - 30, p.mp ? '#38bdf8' : '#f43f5e');
                     updateUI();
                     if (p.mesh) dynGroup.remove(p.mesh);
                     potions.splice(i, 1);
@@ -2479,6 +2559,7 @@
         } else {
             // สร้างไอดีใหม่
             playerStats.name = nameInput;
+            playerStats.classChosen = false;
             accounts[nameInput] = { pin: pinInput, stats: playerStats };
             localStorage.setItem('dungeon_accounts', JSON.stringify(accounts));
         }
@@ -2486,14 +2567,66 @@
         updateUI();
         updateMana();
         
-        const startScreen = document.getElementById('start-screen');
-        startScreen.style.opacity = '0';
-        setTimeout(() => {
-            startScreen.style.display = 'none';
-            gameState.isPaused = false;
-            // ตั้งให้เซฟอัตโนมัติทุกๆ 10 วินาที
-            setInterval(saveGame, 10000);
-        }, 500);
+        if (playerStats.classChosen === false) { showClassSelect(); return; }
+        enterGame();
+    }
+
+    // ==========================================
+    // CLASS SELECT (once after first login) & CLASS CHANGE (shop)
+    // ==========================================
+    let _autoSave = null, _classPending = null;
+    function enterGame() {
+        ['start-screen', 'class-screen'].forEach(id => {
+            const el = document.getElementById(id);
+            el.style.opacity = '0';
+            setTimeout(() => { el.style.display = 'none'; }, 500);
+        });
+        gameState.isPaused = false;
+        if (!_autoSave) _autoSave = setInterval(saveGame, 10000);
+    }
+    function showClassSelect() {
+        document.getElementById('start-screen').style.display = 'none';
+        const cs = document.getElementById('class-screen');
+        cs.style.display = 'flex'; cs.style.opacity = '1';
+        renderClassCards();
+    }
+    function confirmClass() { playerStats.classChosen = true; saveGame(); enterGame(); }
+
+    function classChangeCost() { return 3000 + 1500 * (playerStats.classChanges || 0); }
+    function renderShopClassList() {
+        const el = document.getElementById('shop-class-list'); if (!el) return;
+        const cost = classChangeCost();
+        el.innerHTML = `<div class='text-xs text-gray-400 text-left mb-1'>ราคา ${cost} G (แพงขึ้นทุกครั้งที่เปลี่ยน) • สกิลรีเซ็ตและคืนสกิลพอยต์ให้ • สเตตัสที่อัพไว้ยังอยู่</div>` +
+            Object.entries(CLASSES).map(([id, c]) => {
+                const cur = playerStats.cls === id, pend = _classPending === id;
+                const btn = cur ? '' : `<button onclick='requestClassChange("${id}")' class='${pend ? 'bg-red-600 hover:bg-red-500' : 'bg-cyan-700 hover:bg-cyan-600'} px-3 py-1 rounded text-xs font-bold whitespace-nowrap'>${pend ? 'กดอีกครั้งเพื่อยืนยัน ' + cost + ' G' : 'เปลี่ยน ' + cost + ' G'}</button>`;
+                return `<div class='flex items-center justify-between gap-2 bg-gray-800 p-2 rounded ${cur ? 'ring-2 ring-yellow-400' : ''}'><div class='text-left text-sm min-w-0'><span class='text-xl'>${c.icon}</span> <span class='font-bold ${c.color}'>${c.name}</span>${cur ? " <span class='text-xs text-yellow-300'>(อาชีพปัจจุบัน)</span>" : ''}<div class='text-xs text-gray-400'>${c.desc}</div><div class='text-xs text-gray-500'>❤️${c.hp} ⚔️${c.atk} 🛡️${c.def} 💧${c.mp} • ${c.skills.map(s => s.icon).join(' ')}</div></div>${btn}</div>`;
+            }).join('');
+    }
+    function requestClassChange(id) {
+        if (_classPending === id) { _classPending = null; changeClass(id); }
+        else { _classPending = id; renderShopClassList(); }
+    }
+    function changeClass(id) {
+        const cost = classChangeCost();
+        if (id === playerStats.cls) return;
+        if (playerStats.gold < cost) { showMessage('ทองไม่พอสำหรับเปลี่ยนอาชีพ!', '#ef4444'); renderShopClassList(); return; }
+        const old = CLASSES[playerStats.cls];
+        const d = { hp: playerStats.maxHp - old.hp, atk: playerStats.baseAtk - old.atk, def: playerStats.baseDef - old.def, spd: playerStats.baseSpeed - old.spd, mp: playerStats.maxMana - old.mp };
+        const refund = playerStats.skills.reduce((s, sk, i) => s + Math.max(0, sk.level - (i === 0 ? 1 : 0)), 0);
+        playerStats.gold -= cost;
+        playerStats.classChanges = (playerStats.classChanges || 0) + 1;
+        applyClass(id);
+        playerStats.maxHp += d.hp; playerStats.hp = playerStats.maxHp;
+        playerStats.baseAtk += d.atk; playerStats.baseDef += d.def; playerStats.baseSpeed += d.spd;
+        playerStats.maxMana += d.mp; playerStats.mana = playerStats.maxMana;
+        playerStats.skillPoints += refund;
+        allies.forEach(a => { a.isDead = true; if (a.mesh) { dynGroup.remove(a.mesh); a.mesh = null; } });
+        allies = [];
+        player.domainActive = false;
+        spawnParticles(player.x, player.y, '#22d3ee', 40);
+        showMessage(`🎭 เปลี่ยนเป็น ${CLASSES[id].name} สำเร็จ! (-${cost} G${refund ? ', คืนสกิลพอยต์ ' + refund : ''})`, '#22d3ee');
+        saveGame(); updateUI(); renderShopClassList();
     }
 
     window.onload = init;
