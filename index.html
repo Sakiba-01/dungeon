@@ -1,0 +1,1790 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>dungeon Solo</title>
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body, html {
+            margin: 0; padding: 0; width: 100vw; height: 100vh;
+            overflow: hidden; background-color: #0f172a;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+        }
+        #game-canvas { 
+            display: block; position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%; z-index: 1;
+        }
+        
+        /* UI Overlays */
+        .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+        .pointer-events-auto { pointer-events: auto; }
+        
+        .bar-container { background: rgba(0,0,0,0.7); border: 2px solid #333; border-radius: 8px; overflow: hidden; position: relative; }
+        .bar-fill { height: 100%; transition: width 0.2s; }
+        .hp-fill { background: linear-gradient(90deg, #b91c1c, #ef4444); }
+        
+        /* Modals */
+        .modal {
+            display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(15, 23, 42, 0.95); border: 2px solid #334155; border-radius: 12px;
+            padding: 24px; color: white; box-shadow: 0 10px 30px rgba(0,0,0,0.8); pointer-events: auto;
+            min-width: 350px; backdrop-filter: blur(4px); z-index: 50; max-height: 90vh; overflow-y: auto;
+        }
+        
+        /* Inventory Grid */
+        .inv-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 16px; }
+        .inv-slot {
+            width: 60px; height: 60px; background: rgba(0,0,0,0.5); border: 1px solid #475569;
+            border-radius: 6px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; position: relative; transition: all 0.2s;
+        }
+        .inv-slot:hover { border-color: #94a3b8; background: rgba(255,255,255,0.1); }
+        .inv-slot img, .inv-slot .icon { font-size: 24px; }
+        .equipped-indicator { position: absolute; top: 2px; right: 2px; font-size: 10px; color: #fbbf24; font-weight: bold; }
+        
+        /* Ranks */
+        .rank-SSS { color: #f87171; text-shadow: 0 0 8px #f87171; }
+        .rank-SS { color: #facc15; text-shadow: 0 0 8px #facc15; }
+        .rank-S { color: #a78bfa; text-shadow: 0 0 8px #a78bfa; }
+        .rank-A { color: #60a5fa; }
+        .rank-B { color: #34d399; }
+        .rank-C { color: #d1d5db; }
+        .rank-D { color: #9ca3af; }
+        .rank-E { color: #6b7280; }
+
+        /* Floating Text */
+        .floating-text {
+            position: absolute; font-weight: bold; pointer-events: none;
+            text-shadow: 1px 1px 2px black; animation: floatUp 1s forwards;
+            transform: translate(-50%, -100%); z-index: 20;
+        }
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -50px) scale(1.2); }
+        }
+
+        #interaction-prompt {
+            position: absolute; bottom: 20%; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.8); padding: 10px 20px; border-radius: 20px;
+            color: white; font-weight: bold; display: none; border: 1px solid #555; z-index: 20;
+        }
+
+        /* Skills UI */
+        .skill-bar { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; pointer-events: auto; }
+        .skill-slot { width: 50px; height: 50px; background: rgba(0,0,0,0.6); border: 2px solid #475569; border-radius: 8px; position: relative; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+        .skill-cd { position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.7); height: 0%; transition: height 0.1s; border-radius: 6px; }
+        .skill-key { position: absolute; top: -10px; left: -10px; background: #3b82f6; width: 20px; height: 20px; border-radius: 50%; font-size: 12px; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 1px solid #fff; }
+        .skill-lock { position: absolute; inset: 0; background: rgba(0,0,0,0.8); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #ef4444; }
+    </style>
+</head>
+<body>
+
+<canvas id="game-canvas"></canvas>
+
+<!-- Start Screen -->
+<div id="start-screen" class="absolute inset-0 bg-gray-900/95 z-[100] flex flex-col items-center justify-start md:justify-center py-4 overflow-y-auto text-white backdrop-blur-sm transition-opacity duration-500 pointer-events-auto">
+    <div class="text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-b from-blue-400 via-indigo-500 to-purple-600 mb-2 drop-shadow-[0_0_20px_rgba(99,102,241,0.6)] uppercase tracking-wider text-center">
+        dungeon Solo
+    </div>
+    <div class="text-3xl font-bold text-gray-300 mb-6 tracking-[0.3em]">
+        TIME ATTACK
+    </div>
+    
+    <div class="bg-black/60 p-6 rounded-xl border border-gray-700 w-full max-w-md text-center mb-6">
+        <h2 class="text-xl font-bold text-blue-400 mb-4">เข้าสู่ระบบ / สร้างตัวละครใหม่</h2>
+        <div class="mb-3">
+            <input type="text" id="player-name" placeholder="ชื่อนักผจญภัย (Username)" class="px-4 py-3 rounded-lg text-black font-bold text-lg text-center w-full focus:outline-none focus:ring-4 focus:ring-blue-500">
+        </div>
+        <div class="mb-4">
+            <input type="password" id="player-pin" placeholder="รหัสผ่าน 6 หลัก (PIN)" maxlength="6" pattern="\d{6}" class="px-4 py-3 rounded-lg text-black font-bold text-lg text-center w-full tracking-[0.5em] focus:outline-none focus:ring-4 focus:ring-blue-500">
+            <p class="text-xs text-gray-400 mt-2 text-left">* หากเป็นชื่อใหม่ ระบบจะสร้างบัญชีให้ทันที<br>* บัญชีเดิม จะสามารถเล่นต่อจากที่เซฟไว้ได้</p>
+        </div>
+    </div>
+    
+    <div class="text-sm text-gray-400 mb-2">เลือกอาชีพของคุณ (สำหรับไอดีใหม่ - เริ่มต้นด้วย 5,000 ทอง!)</div>
+    <div id="class-cards" class="flex gap-3 mb-6 flex-wrap justify-center px-4"></div>
+
+    <button onclick="startGame()" class="px-10 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 rounded-xl text-2xl font-bold transition-all transform hover:scale-110 shadow-[0_0_25px_rgba(59,130,246,0.6)] hover:shadow-[0_0_40px_rgba(147,51,234,0.9)] border border-blue-400/30">
+        เข้าสู่เกม (START GAME)
+    </button>
+</div>
+
+<!-- HUD Layer -->
+<div class="ui-layer">
+    <div class="absolute top-4 left-4 flex gap-4">
+        <!-- Status -->
+        <div class="w-64">
+            <div class="text-white font-bold mb-1 drop-shadow-md">
+                <span id="ui-player-name" class="text-blue-300 text-lg uppercase tracking-wider">Player</span> 
+            </div>
+            <div class="bar-container h-6 mb-1">
+                <div id="ui-hp-bar" class="bar-fill hp-fill" style="width: 100%;"></div>
+                <div class="absolute inset-0 flex items-center justify-center text-white text-xs font-bold" id="ui-hp-text">100%</div>
+            </div>
+            <div class="bar-container h-4 mb-1">
+                <div id="ui-mp-bar" class="bar-fill" style="width: 100%; background: linear-gradient(90deg, #0e7490, #22d3ee);"></div>
+                <div class="absolute inset-0 flex items-center justify-center text-white text-[10px] font-bold" id="ui-mp-text"></div>
+            </div>
+            <div id="ui-shadow-info" class="text-xs text-purple-300 mb-1" style="display:none"></div>
+        </div>
+    </div>
+    
+    <div class="absolute top-4 right-4 flex flex-col items-end gap-2 pointer-events-auto">
+        <div class="flex gap-2">
+            <button onclick="showDashboard()" class="bg-blue-800/80 hover:bg-blue-600 text-white font-bold py-2 px-3 rounded border border-blue-500 transition shadow-lg flex items-center gap-2 text-sm">
+                🏆 ดูอันดับ
+            </button>
+            <button onclick="logout()" class="bg-red-800/80 hover:bg-red-600 text-white font-bold py-2 px-3 rounded border border-red-500 transition shadow-lg flex items-center gap-2 text-sm">
+                🚪 ล็อคเอาท์
+            </button>
+        </div>
+        <div class="text-right bg-black/60 p-3 rounded-lg border border-gray-700 min-w-[200px]">
+            <div id="ui-floor" class="text-xl font-bold text-green-400">เมืองศูนย์กลาง (Hub)</div>
+            <div id="ui-dungeon-info" class="text-sm text-yellow-300 font-mono font-bold tracking-wider my-1"></div>
+            <div class="text-yellow-400 font-bold text-lg">💰 ทอง: <span id="ui-gold">5000</span></div>
+            <div class="text-gray-300 text-sm mt-1">
+                ดาเมจ: <span id="ui-atk">10</span> | ป้องกัน: <span id="ui-def">5</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Skill Bar -->
+    <div id="skill-bar" class="skill-bar"></div>
+
+    <!-- Interaction Prompt -->
+    <div id="interaction-prompt">[E] ตรวจสอบ</div>
+
+    <!-- Message Popup -->
+    <div id="message-popup" class="absolute top-1/4 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center transition-opacity duration-300 opacity-0 pointer-events-none z-40">
+        <div id="message-text" class="text-2xl font-bold text-white drop-shadow-[0_2px_2px_rgba(0,0,0,1)]"></div>
+    </div>
+</div>
+
+<!-- Inventory Modal -->
+<div id="inventory-modal" class="modal">
+    <div class="flex justify-between items-center mb-4 border-b border-gray-600 pb-2">
+        <h2 class="text-xl font-bold">🎒 กระเป๋าสัมภาระ</h2>
+        <button onclick="toggleInventory()" class="text-gray-400 hover:text-white font-bold">X</button>
+    </div>
+    <div class="text-sm text-gray-400 mb-2">คลิกขวาที่ไอเทมเพื่อสวมใส่/ถอดออก</div>
+    <div class="grid grid-cols-2 gap-4 mb-4 bg-black/40 p-2 rounded">
+        <div>⚔️ อาวุธ: <span id="equip-weapon" class="text-gray-400">ไม่มี</span></div>
+        <div>🛡️ ชุดเกราะ: <span id="equip-armor" class="text-gray-400">ไม่มี</span></div>
+    </div>
+    <div id="inv-container" class="inv-grid"></div>
+</div>
+
+<!-- Shop Modal -->
+<div id="shop-modal" class="modal text-center">
+    <h2 class="text-2xl font-bold text-yellow-400 mb-2">🛒 ร้านค้าเวทมนตร์</h2>
+    <p class="text-gray-300 mb-2">ใช้ทองเพื่อสร้างบิลด์ตัวละครในฝันของคุณ!</p>
+    <div class="flex flex-col gap-3 mt-4">
+        <div class="grid grid-cols-2 gap-2">
+            <button onclick="buyShopItem('statPt')" class="bg-gray-700 hover:bg-blue-600 border border-gray-500 rounded p-2 transition text-sm">🔵 ซื้อ 1 Stat Point (100 ทอง)</button>
+            <button onclick="buyShopItem('skillPt')" class="bg-gray-700 hover:bg-purple-600 border border-gray-500 rounded p-2 transition text-sm">🟣 ซื้อ 1 Skill Point (500 ทอง)</button>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+            <button onclick="buyShopItem('gachaWep')" class="bg-gray-800 hover:bg-yellow-600 border border-yellow-700 rounded p-2 transition text-sm">⚔️ สุ่มอาวุธ (1000 ทอง)</button>
+            <button onclick="buyShopItem('gachaArm')" class="bg-gray-800 hover:bg-yellow-600 border border-yellow-700 rounded p-2 transition text-sm">🛡️ สุ่มเกราะ (1000 ทอง)</button>
+        </div>
+        <button onclick="buyShopItem('heal')" class="bg-gray-700 hover:bg-red-600 border border-gray-500 rounded p-2 transition text-sm">❤️ ฟื้นฟูเลือดเต็ม (50 ทอง)</button>
+        
+        <button onclick="sellAllCommon()" class="bg-gray-700 hover:bg-orange-600 border border-gray-500 rounded p-2 transition text-sm mt-2">💰 ขายของในกระเป๋าทั้งหมด</button>
+        <button onclick="closeModals()" class="bg-red-800 hover:bg-red-700 rounded p-2 mt-2">ปิดหน้าต่าง</button>
+    </div>
+</div>
+
+<!-- Character Modal -->
+<div id="char-modal" class="modal" style="min-width: 450px;">
+    <div class="flex justify-between items-center mb-4 border-b border-gray-600 pb-2">
+        <h2 class="text-xl font-bold">👤 สเตตัสและสกิล</h2>
+        <button onclick="toggleCharMenu()" class="text-gray-400 hover:text-white font-bold">X</button>
+    </div>
+    
+    <div class="flex gap-2 mb-3 items-center bg-gray-800 p-2 rounded">
+        <span class="text-sm font-bold text-gray-300">ปริมาณการอัพต่อครั้ง:</span>
+        <button id="upg-btn-1" onclick="setUpgMulti(1)" class="upg-btn ring ring-yellow-400 bg-gray-600 hover:bg-gray-500 px-3 py-1 rounded text-sm">x1</button>
+        <button id="upg-btn-5" onclick="setUpgMulti(5)" class="upg-btn bg-gray-600 hover:bg-gray-500 px-3 py-1 rounded text-sm">x5</button>
+        <button id="upg-btn-10" onclick="setUpgMulti(10)" class="upg-btn bg-gray-600 hover:bg-gray-500 px-3 py-1 rounded text-sm">x10</button>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4">
+        <!-- Stats -->
+        <div class="bg-black/40 p-3 rounded">
+            <h3 class="font-bold text-yellow-400 mb-2">สเตตัส (พอยต์: <span id="stat-pts">0</span>)</h3>
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-sm">❤️ Max HP: <span id="stat-hp">100</span></span>
+                <button onclick="upgradeStat('hp')" class="bg-blue-600 hover:bg-blue-500 px-3 rounded font-bold">+</button>
+            </div>
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-sm">⚔️ ATK: <span id="stat-atk">10</span></span>
+                <button onclick="upgradeStat('atk')" class="bg-blue-600 hover:bg-blue-500 px-3 rounded font-bold">+</button>
+            </div>
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-sm">🛡️ DEF: <span id="stat-def">5</span></span>
+                <button onclick="upgradeStat('def')" class="bg-blue-600 hover:bg-blue-500 px-3 rounded font-bold">+</button>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-sm">👟 SPD: <span id="stat-spd">260</span></span>
+                <button onclick="upgradeStat('spd')" class="bg-blue-600 hover:bg-blue-500 px-3 rounded font-bold">+</button>
+            </div>
+        </div>
+        
+        <!-- Skills -->
+        <div class="bg-black/40 p-3 rounded">
+            <h3 class="font-bold text-purple-400 mb-2">สกิล (พอยต์: <span id="skill-pts">0</span>)</h3>
+            <div id="skill-list-container" class="flex flex-col gap-2 overflow-y-auto max-h-[160px] pr-1"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Shadow Storage Modal -->
+<div id="shadow-modal" class="modal" style="min-width: 420px;">
+    <div class="flex justify-between items-center mb-4 border-b border-gray-600 pb-2">
+        <h2 id="shadow-title" class="text-xl font-bold text-purple-300">🌑 คลังเงา</h2>
+        <button onclick="toggleShadowMenu()" class="text-gray-400 hover:text-white font-bold">X</button>
+    </div>
+    <div class="text-xs text-gray-400 mb-2">เงาที่ตายในสนามจะไม่หายจากคลัง (แลกด้วยมานา) ลบได้เฉพาะที่นี่</div>
+    <div id="shadow-list" class="flex flex-col gap-2 overflow-y-auto max-h-[300px] pr-1"></div>
+</div>
+
+<!-- Dashboard Modal -->
+<div id="dashboard-modal" class="modal" style="min-width: 600px; max-width: 800px; width: 90%;">
+    <div class="flex justify-between items-center mb-4 border-b border-gray-600 pb-2">
+        <h2 class="text-2xl font-bold text-blue-400">🏆 หอเกียรติยศ (Time Attack)</h2>
+        <button onclick="closeModals()" class="text-gray-400 hover:text-white font-bold text-xl">X</button>
+    </div>
+    <p class="text-gray-300 text-sm mb-4">สถิติการเคลียร์ดันเจี้ยนในแต่ละระดับ (จัดอันดับตามเวลาที่เร็วที่สุด)</p>
+    
+    <div id="dash-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[50vh] overflow-y-auto pr-2">
+        <!-- Rendered via JS -->
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // DATA & CONSTANTS
+    // ==========================================
+    const RANKS = [
+        { name: 'E', weight: 60, mult: 0.5, color: '#6b7280' },
+        { name: 'D', weight: 40, mult: 1, color: '#9ca3af' },
+        { name: 'C', weight: 25, mult: 1.5, color: '#d1d5db' },
+        { name: 'B', weight: 15, mult: 2.5, color: '#34d399' },
+        { name: 'A', weight: 8, mult: 4, color: '#60a5fa' },
+        { name: 'S', weight: 3, mult: 7, color: '#a78bfa' },
+        { name: 'SS', weight: 0.5, mult: 12, color: '#facc15' }
+    ];
+
+    let gameState = {
+        floor: 0,
+        isPaused: true,
+        interactTarget: null,
+        shopOpen: false,
+        lastTime: 0,
+        dungeon: null,
+        upgMulti: 1
+    };
+
+    let playerStats = {
+        name: 'Player',
+        hp: 100,
+        maxHp: 100,
+        gold: 5000,
+        baseAtk: 10,
+        baseDef: 5,
+        baseSpeed: 260,
+        statPoints: 0,
+        skillPoints: 0,
+        inventory: [],
+        equipped: { weapon: null, armor: null },
+        skills: []
+    };
+
+    let corpses = [], allies = [], shadowSeq = 1;
+    Object.assign(playerStats, { cls: 'knight', mana: 60, maxMana: 60, manaRegen: 3, shadows: [] });
+    
+    // ==========================================
+    // ACCOUNT SYSTEM (LOGIN / LOGOUT / SAVE)
+    // ==========================================
+    function saveGame() {
+        if (!playerStats.name || playerStats.name === 'Player') return;
+        let accounts = JSON.parse(localStorage.getItem('dungeon_accounts') || '{}');
+        if (accounts[playerStats.name]) {
+            accounts[playerStats.name].stats = playerStats;
+            localStorage.setItem('dungeon_accounts', JSON.stringify(accounts));
+        }
+    }
+
+    function logout() {
+        saveGame();
+        location.reload(); // รีเฟรชหน้าเว็บกลับไปที่หน้า Login
+    }
+    
+    // ==========================================
+    // DUNGEON GATES, DIFFICULTY & BOSS LOOT
+    // ==========================================
+    const GATE_RANKS = ['E', 'D', 'C', 'B', 'A', 'S'];
+    const GATE_COLORS = ['#6b7280', '#9ca3af', '#d1d5db', '#34d399', '#60a5fa', '#a78bfa'];
+    const SPECIALS = [
+        { name: 'ดาบสังหารมังกร', special: 'execute', desc: 'ดาเมจ x2 ใส่ศัตรูที่เหลือเลือดต่ำกว่า 30%' },
+        { name: 'เคียวดูดวิญญาณ', special: 'lifesteal', desc: 'ดูดเลือด 6% ของดาเมจ' },
+        { name: 'หอกอัสนี', special: 'reach', desc: 'ระยะโจมตี +45' },
+        { name: 'คทาอาร์เคน', special: 'manasteal', desc: 'ฟื้นมานา 3 ต่อการโจมตี' },
+        { name: 'ดาบแห่งชะตา', special: 'crit', desc: 'คริติคอล 25% ดาเมจ x2.5' }
+    ];
+
+    function fmtTime(s) { 
+        if (s === undefined) return "0:00.00";
+        let m = Math.floor(s / 60);
+        let sec = Math.floor(s % 60);
+        let ms = Math.floor((s % 1) * 100);
+        return `${m}:${String(sec).padStart(2, '0')}.${String(ms).padStart(2, '0')}`; 
+    }
+    
+    function isBossFloor(f) { return !!gameState.dungeon && f === gameState.dungeon.floors; }
+    function gateText(i) { return `[E] เข้าดันเจี้ยน แรงก์ ${i.rank} (${i.floors} ชั้น)`; }
+    
+    function gateLabel(info) {
+        const c = document.createElement('canvas'); c.width = 360; c.height = 100;
+        const x = c.getContext('2d'); x.textAlign = 'center';
+        x.font = 'bold 42px sans-serif'; x.fillStyle = info.color; 
+        x.fillText(`แรงก์ ${info.rank}`, 180, 50);
+        const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthTest: false }));
+        s.scale.set(150, 42, 1); s.position.y = 118;
+        return s;
+    }
+
+    function startDungeon(info) {
+        gameState.dungeon = Object.assign({}, info, { time: 0 });
+        loadFloor(1);
+    }
+    
+    function completeDungeon() {
+        const d = gameState.dungeon;
+        const finalTime = d.time;
+        
+        let data = JSON.parse(localStorage.getItem('dungeonDashBoard') || '{}');
+        if(!data[d.rank]) data[d.rank] = [];
+        data[d.rank].push({ name: playerStats.name, time: finalTime });
+        data[d.rank].sort((a,b) => a.time - b.time);
+        data[d.rank] = data[d.rank].slice(0, 10);
+        localStorage.setItem('dungeonDashBoard', JSON.stringify(data));
+
+        saveGame();
+        loadFloor(0);
+        showMessage(`🏆 เคลียร์ดันเจี้ยนแรงก์ ${d.rank} สำเร็จ! ใช้เวลา ${fmtTime(finalTime)}`, '#34d399');
+    }
+
+    function dungeonMult(f, boss) {
+        const d = gameState.dungeon;
+        if (!d) return 1;
+        let m = (1 + 0.3 * d.tier) * Math.pow(1.15, f);
+        if (boss) m *= 1 + 0.3 * d.floors;
+        return m;
+    }
+    
+    function dungeonCount(f) {
+        const d = gameState.dungeon;
+        if (!d) return 4;
+        return Math.floor((4 + f * 1.5) * (1 + 0.1 * d.tier));
+    }
+
+    function applyDungeonMods() {}
+    function bossDropChance(d) { return Math.min(0.9, 0.5 + d.tier * 0.05); }
+
+    function makeSpecialWeapon(fromChest) {
+        const d = gameState.dungeon || { tier: 0, time: 0, floors: 3 };
+        const rank = Math.random() < 0.2 ? RANKS[6] : RANKS[5];
+        const def = SPECIALS[Math.floor(Math.random() * SPECIALS.length)];
+        return { id: Date.now() + Math.random(), name: `${def.name} [${rank.name}]`, type: 'weapon', rank, special: def.special, desc: def.desc, unique: true,
+            stat: Math.floor(6 * rank.mult * (1 + d.tier * 0.3)) + Math.floor(Math.random() * 6) };
+    }
+
+    function weaponHit(e, dmg) {
+        const w = playerStats.equipped.weapon;
+        if (!w || !w.special) return dmg;
+        if (w.special === 'crit' && Math.random() < 0.25) { dmg = Math.floor(dmg * 2.5); spawnParticles(e.x, e.y, '#facc15', 8); }
+        else if (w.special === 'execute' && e.hp < e.maxHp * 0.3) { dmg *= 2; spawnParticles(e.x, e.y, '#ef4444', 8); }
+        else if (w.special === 'lifesteal') { playerStats.hp = Math.min(playerStats.maxHp, playerStats.hp + Math.max(1, Math.floor(dmg * 0.06))); updateUI(); }
+        else if (w.special === 'manasteal') playerStats.mana = Math.min(playerStats.maxMana, playerStats.mana + 3);
+        return dmg;
+    }
+
+    function bigPopup(html, ms) {
+        const popup = document.getElementById('message-popup');
+        document.getElementById('message-text').innerHTML = html;
+        popup.style.opacity = '1';
+        clearTimeout(msgTimeout);
+        msgTimeout = setTimeout(() => { popup.style.opacity = '0'; }, ms);
+    }
+
+    function bossLoot(e) {
+        const d = gameState.dungeon; if (!d) return;
+        const gold = Math.floor(300 * (1 + d.tier * 0.8));
+        playerStats.gold += gold;
+        const ch = bossDropChance(d), got = Math.random() < ch ? makeSpecialWeapon(false) : null;
+        if (got) playerStats.inventory.push(got);
+        saveGame();
+        updateUI();
+        setTimeout(() => bigPopup(`<div class="text-lg">👹 บอสพ่ายแพ้! ทอง +${gold} 💰</div><div class="text-sm text-gray-300">เวลาเคลียร์บอส ${fmtTime(d.time)}</div>` +
+            (got ? `<div class="text-3xl mt-2 rank-${got.rank.name}">✨ ${got.name}</div><div class="text-sm">(ATK +${got.stat}) ${got.desc}</div>` : '<div class="text-sm text-gray-400 mt-1">ไม่ได้ดรอปอาวุธพิเศษ</div>'), 4500), 800);
+    }
+
+    function sellAllCommon() {
+        const eq = [playerStats.equipped.weapon && playerStats.equipped.weapon.id, playerStats.equipped.armor && playerStats.equipped.armor.id];
+        let total = 0, n = 0;
+        playerStats.inventory = playerStats.inventory.filter(it => {
+            if (it.unique || eq.includes(it.id)) return true;
+            total += Math.floor(it.stat * it.rank.mult * 5); n++; return false;
+        });
+        playerStats.gold += total;
+        saveGame();
+        showMessage(n ? `ขาย ${n} ชิ้น ได้รับ ${total} ทอง` : 'ไม่มีของให้ขาย', '#facc15');
+        updateUI(); renderInventory();
+    }
+
+    const CLASSES = {
+        knight: { name: 'อัศวิน', icon: '⚔️', color: 'text-blue-400', desc: 'สมดุลทุกด้าน ดาบกวาดล้างและโล่อมตะ', hp: 110, atk: 12, def: 6, spd: 260, mp: 60, regen: 3, skills: [
+            { name: 'กวาดล้าง', icon: '🌀', fx: 'cleave', mp: 8, cdt: 4, mult: 1.5, r: 120, kb: 40, desc: 'โจมตีรอบตัว' },
+            { name: 'ฟื้นฟู', icon: '💚', fx: 'heal', mp: 20, cdt: 15, mult: 0.2, desc: 'ฟื้นเลือด' },
+            { name: 'พุ่งโจมตี', icon: '⚡', fx: 'dash', mp: 12, cdt: 6, mult: 1.5, desc: 'พุ่งแดชทำดาเมจ' },
+            { name: 'โล่อมตะ', icon: '🛡️', fx: 'shield', mp: 25, cdt: 20, dur: 3, desc: 'อมตะช่วงขณะ' },
+            { name: 'ทุบปฐพี', icon: '💥', fx: 'nova', mp: 40, cdt: 25, mult: 3, r: 220, desc: 'ดาเมจวงกว้าง' }] },
+        tank: { name: 'แทงค์', icon: '🛡️', color: 'text-amber-400', desc: 'เลือดและเกราะหนามาก ชนศัตรูให้มึน', hp: 170, atk: 8, def: 10, spd: 235, mp: 50, regen: 3, skills: [
+            { name: 'กระแทกโล่', icon: '🔰', fx: 'cleave', mp: 8, cdt: 3, mult: 1.2, r: 100, kb: 75, desc: 'ผลักศัตรูรอบตัว' },
+            { name: 'ฟื้นฟู', icon: '💚', fx: 'heal', mp: 20, cdt: 12, mult: 0.25, desc: 'ฟื้นเลือด' },
+            { name: 'พุ่งชน', icon: '🐂', fx: 'dash', mp: 12, cdt: 7, mult: 1.2, desc: 'พุ่งชนทำดาเมจ' },
+            { name: 'กำแพงเหล็ก', icon: '🏰', fx: 'shield', mp: 25, cdt: 22, dur: 5, desc: 'อมตะนานกว่า' },
+            { name: 'สั่นสะเทือน', icon: '🌋', fx: 'nova', mp: 40, cdt: 25, mult: 2, r: 240, stun: 1.5, desc: 'ดาเมจ+สตันวงกว้าง' }] },
+        mage: { name: 'นักเวท', icon: '🔮', color: 'text-cyan-400', desc: 'โจมตีระยะไกล เวทรุนแรง มานาเยอะ', hp: 80, atk: 14, def: 3, spd: 255, mp: 130, regen: 5, skills: [
+            { name: 'ลูกไฟ', icon: '🔥', fx: 'fireball', mp: 12, cdt: 3, mult: 2.5, r: 90, range: 350, desc: 'ระเบิดไฟที่เมาส์' },
+            { name: 'เทเลพอร์ต', icon: '🌀', fx: 'blink', mp: 10, cdt: 5, range: 260, desc: 'วาร์ปไปที่เมาส์' },
+            { name: 'แช่แข็ง', icon: '❄️', fx: 'freeze', mp: 18, cdt: 10, mult: 1, r: 200, desc: 'แช่แข็งศัตรูรอบตัว' },
+            { name: 'ธารฟื้นฟู', icon: '💚', fx: 'heal', mp: 25, cdt: 14, mult: 0.3, desc: 'ฟื้นเลือด' },
+            { name: 'อุกกาบาต', icon: '☄️', fx: 'meteor', mp: 50, cdt: 25, mult: 4, r: 150, range: 400, desc: 'อุกกาบาตตกที่เมาส์' }] },
+        monarch: { name: 'จักรพรรดิเงา', icon: '🌑', color: 'text-purple-400', desc: 'สกัดเงาจากศพ เรียกมาสู้', hp: 95, atk: 11, def: 5, spd: 265, mp: 120, regen: 4, skills: [
+            { name: 'สกัดเงา', icon: '👁️', fx: 'extract', mp: 10, cdt: 1.5, desc: 'สกัดเงาจากศพใกล้ตัว' },
+            { name: 'เรียกเงา', icon: '🌑', fx: 'summon', mp: 8, cdt: 4, desc: 'เรียกเงาที่แข็งแกร่งสุดออกมา' },
+            { name: 'ก้าวเงา', icon: '💨', fx: 'dash', mp: 12, cdt: 5, mult: 1.5, desc: 'พุ่งผ่านเงาทำดาเมจ' },
+            { name: 'โดเมนราชันย์', icon: '👑', fx: 'domain', mp: 30, cdt: 25, desc: 'เงาแรงขึ้น+ฟื้นเลือดเงา' },
+            { name: 'กองทัพเงา', icon: '⚔️', fx: 'army', mp: 5, cdt: 30, desc: 'เรียกเงาทั้งหมดในคลัง' }] }
+    };
+
+    function recolorPlayer(id) {
+        if (!playerMesh.userData || !playerMesh.userData.cape) return;
+        const col = { knight: [0x1d4ed8, 0x64748b], tank: [0x78350f, 0xb45309], mage: [0x0e7490, 0x22d3ee], monarch: [0x4c1d95, 0x3b82f6] }[id];
+        playerMesh.userData.cape.children[0].material.color.setHex(col[0]);
+        sword.children[0].material.emissive.setHex(col[1]);
+    }
+    
+    function applyClass(id) {
+        const c = CLASSES[id];
+        Object.assign(playerStats, { cls: id, maxHp: c.hp, hp: c.hp, baseAtk: c.atk, baseDef: c.def, baseSpeed: c.spd, maxMana: c.mp, mana: c.mp, manaRegen: c.regen });
+        playerStats.skills = c.skills.map((s, i) => Object.assign({ id: i + 1, level: i === 0 ? 1 : 0, cd: 0 }, s, { maxCd: s.cdt, desc: s.desc + ' • MP ' + s.mp }));
+        recolorPlayer(id); updateUI(); updateMana();
+    }
+    
+    function renderClassCards() {
+        document.getElementById('class-cards').innerHTML = Object.entries(CLASSES).map(([id, c]) =>
+            `<button onclick="selectClass('${id}')" class="w-40 p-3 rounded-xl border-2 text-left transition ${playerStats.cls === id ? 'border-yellow-400 bg-white/15 scale-105' : 'border-gray-600 bg-black/40 hover:border-gray-300'}"><div class="text-3xl">${c.icon}</div><div class="font-bold ${c.color}">${c.name}</div><div class="text-xs text-gray-300">${c.desc}</div></button>`).join('');
+    }
+    
+    function selectClass(id) { applyClass(id); renderClassCards(); }
+    
+    function updateMana() {
+        const b = document.getElementById('ui-mp-bar'); if (!b) return;
+        const di = document.getElementById('ui-dungeon-info');
+        if (di) {
+            const d = gameState.dungeon;
+            di.textContent = d ? `⏱ เวลา: ${fmtTime(d.time)}` : ``;
+        }
+        b.style.width = Math.max(0, playerStats.mana / playerStats.maxMana * 100) + '%';
+        document.getElementById('ui-mp-text').innerText = `MP ${Math.floor(playerStats.mana)} / ${playerStats.maxMana}`;
+        const si = document.getElementById('ui-shadow-info');
+        if (playerStats.cls === 'monarch') {
+            si.style.display = 'block';
+            si.textContent = `🌑 เงาในสนาม ${allies.filter(a => !a.isDead).length} | คลัง ${playerStats.shadows.length}/${shadowCap()} [V]`;
+        } else si.style.display = 'none';
+    }
+
+    function shadowCap() { return 10 + (playerStats.skills[0] ? playerStats.skills[0].level * 2 : 0); }
+    function shadowStats(sh) {
+        const sl = playerStats.skills[1] ? playerStats.skills[1].level : 0;
+        return { hp: Math.floor(sh.baseHp * (1 + sl * 0.1)), atk: Math.floor(sh.baseAtk * (1 + sl * 0.08)), speed: sh.speed * 1.15 };
+    }
+    function removeCorpse(c) { if (c.mesh) dynGroup.remove(c.mesh); corpses = corpses.filter(x => x !== c); }
+    function extractShadow(sk) {
+        let best = null, bd = 1e9;
+        corpses.forEach(c => { const d = Math.hypot(c.x - player.x, c.y - player.y); if (d < bd) { bd = d; best = c; } });
+        if (!best || bd > 180) { showMessage('ไม่มีศพใกล้ตัวให้สกัดเงา', '#ef4444'); return false; }
+        if (playerStats.shadows.length >= shadowCap()) { showMessage('คลังเงาเต็ม! กด V เพื่อลบเงา', '#ef4444'); return false; }
+        removeCorpse(best);
+        const chance = Math.min(0.95, 0.5 + sk.level * 0.1 - (best.isBoss ? 0.25 : 0));
+        if (Math.random() < chance) {
+            const names = { '🐺': 'หมาป่า', '🦇': 'ค้างคาว', '🕷️': 'แมงมุม', '🧟': 'ซอมบี้', '👻': 'ผี', '👹': 'ราชาอสูร' };
+            playerStats.shadows.push({ id: shadowSeq++, name: 'เงา' + (names[best.emoji] || 'อสูร'), emoji: best.emoji, isBoss: best.isBoss, radius: best.radius, baseHp: best.maxHp * 0.8, baseAtk: best.atk * 0.9, speed: best.speed });
+            spawnParticles(best.x, best.y, '#a78bfa', 40);
+            showMessage('🌑 สกัดเงาสำเร็จ! "ลุกขึ้นมา"', '#a78bfa');
+        } else {
+            spawnParticles(best.x, best.y, '#6b7280', 20);
+            showMessage('การสกัดล้มเหลว... เงาสลายไป', '#9ca3af');
+        }
+        return true;
+    }
+    function summonShadows(maxN, mpEach) {
+        const alive = allies.filter(a => !a.isDead), out = new Set(alive.map(a => a.sh.id));
+        const room = maxN - alive.length;
+        if (!playerStats.shadows.length) { showMessage('คลังเงาว่างเปล่า', '#ef4444'); return 0; }
+        if (room <= 0) { showMessage('เงาในสนามเต็มแล้ว', '#ef4444'); return 0; }
+        const cand = playerStats.shadows.filter(s => !out.has(s.id)).sort((a, b) => b.baseHp - a.baseHp);
+        let n = 0, cost = 0;
+        for (const s of cand) {
+            if (n >= room || playerStats.mana - cost < mpEach) break;
+            allies.push(new Ally(s)); cost += mpEach; n++;
+        }
+        if (!n) { showMessage('ไม่มีเงาให้เรียก หรือมานาไม่พอ', '#ef4444'); return 0; }
+        spawnParticles(player.x, player.y, '#8b5cf6', 40);
+        showMessage(`🌑 เรียกเงา ${n} ตน`, '#a78bfa');
+        return cost;
+    }
+
+    function toggleShadowMenu() {
+        const modal = document.getElementById('shadow-modal');
+        if (modal.style.display === 'block') { modal.style.display = 'none'; gameState.isPaused = false; }
+        else { closeModals(); modal.style.display = 'block'; gameState.isPaused = true; renderShadowMenu(); }
+    }
+    function renderShadowMenu() {
+        document.getElementById('shadow-title').innerText = `🌑 คลังเงา (${playerStats.shadows.length}/${shadowCap()})`;
+        const out = new Set(allies.filter(a => !a.isDead).map(a => a.sh.id));
+        document.getElementById('shadow-list').innerHTML = playerStats.shadows.length ? playerStats.shadows.map(s => {
+            const st = shadowStats(s);
+            return `<div class="flex justify-between items-center bg-gray-800 p-2 rounded"><div class="text-sm"><span class="text-xl">${s.emoji}</span> <span class="font-bold text-purple-300">${s.name}</span>${out.has(s.id) ? ' <span class="text-green-400 text-xs">(อยู่ในสนาม)</span>' : ''}<span class="text-gray-400 block text-xs">❤️ ${st.hp} | ⚔️ ${st.atk}</span></div><button onclick="deleteShadow(${s.id})" class="bg-red-700 hover:bg-red-600 px-2 py-1 rounded text-xs font-bold">ลบ</button></div>`;
+        }).join('') : '<div class="text-gray-400 text-sm">ยังไม่มีเงา — ฆ่ามอนสเตอร์แล้วใช้ [1] สกัดเงาที่ศพ</div>';
+    }
+    function deleteShadow(id) {
+        playerStats.shadows = playerStats.shadows.filter(s => s.id !== id);
+        allies.forEach(a => { if (a.sh.id === id) { a.isDead = true; if (a.mesh) { dynGroup.remove(a.mesh); a.mesh = null; } } });
+        allies = allies.filter(a => !a.isDead);
+        renderShadowMenu();
+    }
+
+    function getTotalAtk() { return playerStats.baseAtk + (playerStats.equipped.weapon ? playerStats.equipped.weapon.stat : 0); }
+    function getTotalDef() { return playerStats.baseDef + (playerStats.equipped.armor ? playerStats.equipped.armor.stat : 0); }
+
+    // ==========================================
+    // CANVAS SETUP & THREE.JS SCENE
+    // ==========================================
+    const canvas = document.getElementById('game-canvas');
+    let camera = { x: 0, y: 0 };
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.shadowMap.enabled = true;
+    const scene = new THREE.Scene();
+    const cam3 = new THREE.PerspectiveCamera(50, 1, 10, 3000);
+    const sun = new THREE.DirectionalLight(0xffffff, 0.8);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    Object.assign(sun.shadow.camera, { left: -650, right: 650, top: 650, bottom: -650, near: 10, far: 1500 });
+    scene.add(sun, sun.target, new THREE.AmbientLight(0x9aa6c8, 0.65));
+    const torch = new THREE.PointLight(0xffaa55, 0.9, 520);
+    scene.add(torch);
+    const staticGroup = new THREE.Group(), dynGroup = new THREE.Group();
+    scene.add(staticGroup, dynGroup);
+
+    function resize() {
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.setSize(window.innerWidth, window.innerHeight, false);
+        cam3.aspect = window.innerWidth / window.innerHeight;
+        cam3.updateProjectionMatrix();
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    const M = (c, o = {}) => new THREE.MeshStandardMaterial(Object.assign({ color: c, roughness: 0.8, metalness: 0.1 }, o));
+    function mk(geo, mat, x = 0, y = 0, z = 0) {
+        const m = new THREE.Mesh(geo, mat);
+        m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true;
+        return m;
+    }
+    function label(text) {
+        const c = document.createElement('canvas'); c.width = 256; c.height = 64;
+        const x = c.getContext('2d');
+        x.font = 'bold 36px sans-serif'; x.fillStyle = '#fff'; x.textAlign = 'center'; x.fillText(text, 128, 44);
+        const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthTest: false }));
+        s.scale.set(100, 25, 1); s.position.y = 105;
+        return s;
+    }
+
+    const playerMesh = new THREE.Group();
+    const sword = new THREE.Group();
+    const arc = new THREE.Mesh(new THREE.CircleGeometry(85, 20, -Math.PI / 4, Math.PI / 2),
+        new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.45, side: THREE.DoubleSide }));
+    const shield = new THREE.Mesh(new THREE.SphereGeometry(32, 20, 14),
+        new THREE.MeshBasicMaterial({ color: 0xa78bfa, transparent: true, opacity: 0.3 }));
+    (function () {
+        const dark = M(0x111827, { metalness: 0.5, roughness: 0.5 });
+        const violet = M(0x7c3aed, { emissive: 0x7c3aed, emissiveIntensity: 0.8 });
+        const glow = M(0x60a5fa, { emissive: 0x60a5fa, emissiveIntensity: 1 });
+        const legs = [], arms = [];
+        [-1, 1].forEach(s => {
+            const leg = new THREE.Group(); leg.position.set(0, 16, s * 5.5);
+            leg.add(mk(new THREE.CylinderGeometry(4.5, 5, 16, 8), M(0x0f172a), 0, -8, 0));
+            leg.add(mk(new THREE.BoxGeometry(12, 5, 8), dark, 3, -13.5, 0));
+            playerMesh.add(leg); legs.push(leg);
+            const arm = new THREE.Group(); arm.position.set(0, 34, s * 15);
+            arm.add(mk(new THREE.CylinderGeometry(3.5, 3, 18, 8), M(0x1f2937), 0, -8, 0));
+            playerMesh.add(arm); arms.push(arm);
+            const pad = mk(new THREE.SphereGeometry(7, 12, 8), dark, 0, 35, s * 15); pad.scale.y = 0.6; playerMesh.add(pad);
+            const spike = mk(new THREE.ConeGeometry(3, 13, 6), violet, 0, 42, s * 17); spike.rotation.x = s * 0.5; playerMesh.add(spike);
+        });
+        playerMesh.add(mk(new THREE.CylinderGeometry(11, 13, 22, 12), dark, 0, 26, 0));
+        playerMesh.add(mk(new THREE.CylinderGeometry(12.5, 12.5, 3, 12), violet, 0, 17, 0));
+        const rune = mk(new THREE.OctahedronGeometry(3.5), glow, 11.5, 28, 0); rune.scale.z = 0.5; playerMesh.add(rune);
+        playerMesh.add(mk(new THREE.SphereGeometry(10, 16, 12), M(0x020617), 3, 44, 0));
+        playerMesh.add(mk(new THREE.SphereGeometry(12, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.62), M(0x1e1b4b), -2, 45, 0));
+        const tip = mk(new THREE.ConeGeometry(5, 16, 8), M(0x1e1b4b), -14, 46, 0); tip.rotation.z = Math.PI / 2; playerMesh.add(tip);
+        [[2, 56, 0, 0], [-3, 55, 6, 0.4], [-3, 55, -6, -0.4]].forEach(c => {
+            const sp = mk(new THREE.ConeGeometry(2, 9, 6), M(0xa78bfa, { emissive: 0xa78bfa, emissiveIntensity: 0.9 }), c[0], c[1], c[2]); sp.rotation.x = c[3]; playerMesh.add(sp);
+        });
+        [-1, 1].forEach(s => {
+            const eye = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2.5, 4.5), new THREE.MeshBasicMaterial({ color: 0x7dd3fc }));
+            eye.position.set(11.5, 44, s * 4.5); playerMesh.add(eye);
+        });
+        const cape = new THREE.Group(); cape.position.set(-11, 42, 0);
+        cape.add(mk(new THREE.BoxGeometry(2, 36, 26), M(0x4c1d95, { side: THREE.DoubleSide }), 0, -18, 0));
+        cape.add(mk(new THREE.BoxGeometry(2.4, 3, 26), violet, 0, -35, 0));
+        playerMesh.add(cape); playerMesh.userData.cape = cape;
+        playerMesh.userData.legs = legs; playerMesh.userData.arms = arms;
+        const orb = mk(new THREE.SphereGeometry(5, 12, 10), M(0xa78bfa, { emissive: 0xa78bfa, emissiveIntensity: 1 }), 10, 28, -17); playerMesh.add(orb);
+        playerMesh.userData.wisps = [0, 1, 2].map(() => {
+            const w = new THREE.Mesh(new THREE.OctahedronGeometry(4), new THREE.MeshBasicMaterial({ color: 0x8b5cf6, transparent: true, opacity: 0.8 }));
+            playerMesh.add(w); return w;
+        });
+        sword.position.set(8, 26, 16);
+        sword.add(mk(new THREE.BoxGeometry(48, 4, 8), M(0x93c5fd, { emissive: 0x3b82f6, emissiveIntensity: 1, metalness: 0.6, roughness: 0.2 }), 26, 0, 0));
+        sword.add(mk(new THREE.BoxGeometry(46, 1.5, 3), new THREE.MeshBasicMaterial({ color: 0xffffff }), 26, 0, 0));
+        sword.add(mk(new THREE.BoxGeometry(4, 5, 16), M(0x4c1d95), 3, 0, 0));
+        sword.add(mk(new THREE.BoxGeometry(8, 4, 4), dark, -4, 0, 0));
+        playerMesh.add(sword);
+        arc.rotation.x = -Math.PI / 2; arc.position.y = 3;
+        shield.position.y = 28;
+        playerMesh.add(arc, shield);
+        scene.add(playerMesh);
+    })();
+
+    function makeEnemy(e) {
+        const g = new THREE.Group(), body = new THREE.Group(), r = e.radius, mats = [];
+        const B = (c, o) => { const m = M(c, o); mats.push(m); return m; };
+        const idx = ['🐺', '🦇', '🕷️', '🧟', '👻'].indexOf(e.emoji);
+        let eyeX = r * 0.65, eyeY = r;
+        e.float = false;
+        if (e.isBoss) {
+            body.add(mk(new THREE.CylinderGeometry(r * 0.8, r, r * 1.8, 14), B(0x7f1d1d), 0, r * 0.9, 0));
+            body.add(mk(new THREE.SphereGeometry(r * 0.6, 16, 12), B(0xb91c1c), 0, r * 2.1, 0));
+            [-1, 1].forEach(s => { const h = mk(new THREE.ConeGeometry(r * 0.14, r * 0.7, 8), B(0x1c1917), 0, r * 2.75, s * r * 0.35); h.rotation.x = s * 0.4; body.add(h); });
+            eyeY = r * 2.2;
+        } else if (idx === 0) {
+            body.add(mk(new THREE.BoxGeometry(r * 1.6, r * 0.8, r * 0.8), B(0x6b7280), 0, r * 0.7, 0));
+            body.add(mk(new THREE.BoxGeometry(r * 0.6, r * 0.6, r * 0.6), B(0x4b5563), r * 1.0, r * 0.9, 0));
+            eyeX = r * 1.3; eyeY = r * 1.0;
+        } else if (idx === 1) {
+            e.float = true;
+            body.add(mk(new THREE.OctahedronGeometry(r * 0.6), B(0x7c3aed), 0, r, 0));
+            [-1, 1].forEach(s => body.add(mk(new THREE.BoxGeometry(r * 0.6, 2, r * 1.2), B(0x4c1d95), 0, r, s * r * 0.9)));
+        } else if (idx === 2) {
+            const sp = mk(new THREE.SphereGeometry(r * 0.8, 14, 10), B(0x7f1d1d), 0, r * 0.5, 0); sp.scale.y = 0.65; body.add(sp);
+            body.add(mk(new THREE.SphereGeometry(r * 0.4, 10, 8), B(0x450a0a), r * 0.7, r * 0.5, 0));
+            for (let i = 0; i < 4; i++) [-1, 1].forEach(s => { const l = mk(new THREE.CylinderGeometry(1.5, 1.5, r * 1.3, 5), B(0x1c1917), (i - 1.5) * r * 0.35, r * 0.3, s * r * 0.7); l.rotation.x = s * 0.9; body.add(l); });
+            eyeX = r * 1.0; eyeY = r * 0.55;
+        } else if (idx === 3) {
+            body.add(mk(new THREE.CylinderGeometry(r * 0.5, r * 0.6, r * 1.5, 10), B(0x4d7c0f), 0, r * 0.75, 0));
+            body.add(mk(new THREE.SphereGeometry(r * 0.45, 12, 10), B(0x84cc16), 0, r * 1.8, 0));
+            [-1, 1].forEach(s => body.add(mk(new THREE.BoxGeometry(r * 1.0, r * 0.25, r * 0.25), B(0x4d7c0f), r * 0.5, r * 1.3, s * r * 0.6)));
+            eyeX = r * 0.45; eyeY = r * 1.85;
+        } else {
+            e.float = true;
+            const c = mk(new THREE.ConeGeometry(r * 0.8, r * 1.9, 12), B(0xe2e8f0, { transparent: true, opacity: 0.75 }), 0, r, 0); c.rotation.z = Math.PI; body.add(c);
+            eyeX = r * 0.5; eyeY = r * 1.5;
+        }
+        [-1, 1].forEach(s => { const eye = new THREE.Mesh(new THREE.SphereGeometry(Math.max(2, r * 0.1), 8, 8), new THREE.MeshBasicMaterial({ color: 0xff2222 })); eye.position.set(eyeX, eyeY, s * r * 0.22); body.add(eye); });
+        g.add(body);
+        const hy = r * 2.4 + 16;
+        const bg = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0x000000, depthTest: false })); bg.scale.set(44, 6, 1); bg.position.y = hy;
+        const fill = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0xef4444, depthTest: false })); fill.position.y = hy; fill.renderOrder = 2;
+        g.add(bg, fill);
+        g.userData = { body, mats, fill };
+        return g;
+    }
+
+    function makeInter(it) {
+        const g = new THREE.Group();
+        if (it.type === 'portal') {
+            const ring = mk(new THREE.TorusGeometry(28, 5, 12, 28), M(0x22d3ee, { emissive: 0x0891b2 }), 0, 38, 0);
+            const disc = new THREE.Mesh(new THREE.CircleGeometry(24, 24), new THREE.MeshBasicMaterial({ color: 0x67e8f9, transparent: true, opacity: 0.45, side: THREE.DoubleSide }));
+            disc.position.y = 38;
+            const pl = new THREE.PointLight(0x22d3ee, 1, 260); pl.position.y = 40;
+            g.add(ring, disc, pl); g.userData.spin = [ring, disc];
+        } else if (it.type === 'gate') {
+            const gh = new THREE.Color(it.info.color).getHex();
+            const ring = mk(new THREE.TorusGeometry(36, 6, 12, 32), M(gh, { emissive: gh, emissiveIntensity: 0.9 }), 0, 46, 0);
+            const disc = new THREE.Mesh(new THREE.CircleGeometry(31, 28), new THREE.MeshBasicMaterial({ color: gh, transparent: true, opacity: 0.4, side: THREE.DoubleSide }));
+            disc.position.y = 46;
+            const pl = new THREE.PointLight(gh, 1, 300); pl.position.y = 50;
+            g.add(ring, disc, pl, gateLabel(it.info)); g.userData.spin = [ring, disc];
+        } else if (it.type === 'door') {
+            [-1, 1].forEach(s => g.add(mk(new THREE.BoxGeometry(14, 110, 22), M(0x44403c), s * 38, 55, 0)));
+            g.add(mk(new THREE.BoxGeometry(100, 16, 22), M(0x44403c), 0, 102, 0));
+            const panel = new THREE.Mesh(new THREE.BoxGeometry(62, 94, 6), new THREE.MeshStandardMaterial({ color: 0x7f1d1d, emissive: 0x450a0a, transparent: true }));
+            panel.position.y = 47;
+            const pl = new THREE.PointLight(0xef4444, 0.9, 260); pl.position.set(0, 60, 30);
+            const l1 = label('🔒 ล็อก'), l2 = label('ทางออก');
+            l1.position.y = 130; l2.position.y = 130; l2.visible = false;
+            g.add(panel, pl, l1, l2);
+            g.userData.door = { panel, pl, l1, l2 };
+        } else if (it.type === 'shop') {
+            g.add(mk(new THREE.BoxGeometry(64, 30, 46), M(0x92400e), 0, 15, 0));
+            const roof = mk(new THREE.ConeGeometry(48, 30, 4), M(0xb91c1c), 0, 45, 0); roof.rotation.y = Math.PI / 4; g.add(roof);
+            g.add(mk(new THREE.CylinderGeometry(8, 12, 30, 10), M(0x6d28d9), 0, 15, 36));
+            g.add(mk(new THREE.SphereGeometry(8, 12, 10), M(0xffedd5), 0, 38, 36));
+            g.add(label('ร้านค้า'));
+        } else {
+            g.add(mk(new THREE.BoxGeometry(40, 24, 28), M(0xb45309), 0, 12, 0));
+            g.add(mk(new THREE.BoxGeometry(42, 8, 30), M(0xfacc15, { emissive: 0x854d0e }), 0, 28, 0));
+            const pl = new THREE.PointLight(0xfacc15, 1, 220); pl.position.y = 50; g.add(pl);
+        }
+        return g;
+    }
+
+    function makeDeco(d, i, floor) {
+        const g = new THREE.Group(), s = d.size / 30, k = i % 3;
+        if (floor === 0) {
+            if (k === 0) {
+                g.add(mk(new THREE.CylinderGeometry(4, 6, 24, 8), M(0x78350f), 0, 12, 0));
+                g.add(mk(new THREE.ConeGeometry(20, 50, 8), M(0x15803d), 0, 49, 0));
+                g.add(mk(new THREE.ConeGeometry(15, 38, 8), M(0x16a34a), 0, 72, 0));
+            } else if (k === 1) {
+                const b = mk(new THREE.SphereGeometry(16, 12, 10), M(0x22c55e), 0, 10, 0); b.scale.y = 0.7; g.add(b);
+            } else {
+                g.add(mk(new THREE.CylinderGeometry(3, 3, 40, 8), M(0x64748b), 0, 20, 0));
+                g.add(mk(new THREE.SphereGeometry(7, 10, 8), M(0xfde68a, { emissive: 0xf59e0b }), 0, 44, 0));
+            }
+        } else if (isBossFloor(floor)) {
+            if (i % 2) g.add(mk(new THREE.ConeGeometry(10, 50, 6), M(0x450a0a), 0, 25, 0));
+            else g.add(mk(new THREE.DodecahedronGeometry(18), M(0x7c2d12, { emissive: 0xea580c, emissiveIntensity: 0.6 }), 0, 14, 0));
+        } else {
+            if (k === 0) g.add(mk(new THREE.DodecahedronGeometry(18), M(0x57534e), 0, 12, 0));
+            else if (k === 1) {
+                g.add(mk(new THREE.CylinderGeometry(4, 5, 16, 8), M(0xe7e5e4), 0, 8, 0));
+                g.add(mk(new THREE.SphereGeometry(12, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), M(0xa855f7), 0, 16, 0));
+            } else { const c = mk(new THREE.OctahedronGeometry(12), M(0x38bdf8, { emissive: 0x0369a1 }), 0, 20, 0); c.scale.y = 2; g.add(c); }
+        }
+        g.scale.setScalar(s); g.position.set(d.x, 0, d.y); g.rotation.y = i;
+        return g;
+    }
+
+    function build3DFloor(f) {
+        [staticGroup, dynGroup].forEach(gr => { while (gr.children.length) gr.remove(gr.children[0]); });
+        const th = f === 0 ? { floor: 0x14532d, bg: 0x0b2a22, wall: 0x365314, grid: 0x4ade80 }
+                 : isBossFloor(f) ? { floor: 0x3b0f0f, bg: 0x1a0505, wall: 0x1c0a0a, grid: 0xef4444 }
+                 : { floor: 0x2b2b44, bg: 0x0d0d1a, wall: 0x3f3f5c, grid: 0x818cf8 };
+        scene.background = new THREE.Color(th.bg);
+        scene.fog = new THREE.Fog(th.bg, 700, 1500);
+        torch.intensity = f === 0 ? 0.25 : 1.0;
+        const ground = new THREE.Mesh(new THREE.PlaneGeometry(1800, 1800), M(th.floor, { roughness: 1 }));
+        ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true;
+        const grid = new THREE.GridHelper(1600, 16, th.grid, th.grid);
+        grid.position.y = 0.5; grid.material.transparent = true; grid.material.opacity = 0.15;
+        staticGroup.add(ground, grid);
+        [[0, -820, 1680, 40], [0, 820, 1680, 40], [-820, 0, 40, 1680], [820, 0, 40, 1680]].forEach(w => {
+            staticGroup.add(mk(new THREE.BoxGeometry(w[2], 110, w[3]), M(th.wall), w[0], 55, w[1]));
+        });
+        decorations.forEach((d, i) => staticGroup.add(makeDeco(d, i, f)));
+    }
+
+    const PMAX = 800, pPos = new Float32Array(PMAX * 3), pCol = new Float32Array(PMAX * 3), _c = new THREE.Color();
+    const pGeo = new THREE.BufferGeometry();
+    pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+    pGeo.setAttribute('color', new THREE.BufferAttribute(pCol, 3));
+    const pts = new THREE.Points(pGeo, new THREE.PointsMaterial({ size: 9, vertexColors: true }));
+    pts.frustumCulled = false; scene.add(pts);
+
+    const _ray = new THREE.Raycaster(), _plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), _v = new THREE.Vector3(), _ndc = new THREE.Vector2();
+    function mouseWorld() {
+        _ndc.set(mouse.x / window.innerWidth * 2 - 1, -(mouse.y / window.innerHeight) * 2 + 1);
+        _ray.setFromCamera(_ndc, cam3);
+        return _ray.ray.intersectPlane(_plane, _v) ? { x: _v.x, y: _v.z } : { x: player.x + 1, y: player.y };
+    }
+
+    let walkPh = 0, walkAmp = 0, _lt = 0;
+    function sync3D(t) {
+        playerMesh.position.set(player.x, 0, player.y);
+        playerMesh.rotation.y = -player.dirAngle;
+        playerMesh.visible = !(player.invulnTimer > 0 && player.shieldEffect <= 0 && Math.floor(Date.now() / 100) % 2 === 0);
+        arc.visible = player.attackTimer > 0.1 && playerStats.cls !== 'mage';
+        shield.visible = player.shieldEffect > 0;
+        sword.rotation.y = player.attackTimer > 0 ? 0.9 - 1.8 * (1 - player.attackTimer / 0.3) : 0;
+        torch.position.set(player.x, 90, player.y);
+        const pu = playerMesh.userData, moving = keys.w || keys.a || keys.s || keys.d || player.dashTimer > 0;
+        const dts = Math.min(t - _lt, 0.1); _lt = t;
+        walkAmp += ((moving ? 1 : 0) - walkAmp) * Math.min(1, dts * 10);
+        walkPh += dts * 11 * walkAmp * (playerStats.baseSpeed / 260);
+        const sw = player.attackTimer > 0 ? 1 - player.attackTimer / 0.3 : 0, atk = Math.sin(sw * Math.PI);
+        const ws = Math.sin(walkPh) * 0.9 * walkAmp, idle = Math.sin(t * 2) * 0.06;
+        pu.legs[0].rotation.z = ws; pu.legs[1].rotation.z = -ws;
+        pu.arms[0].rotation.z = -ws * 0.8 + idle - 0.6 * atk;
+        pu.arms[1].rotation.z = ws * 0.3 + 1.4 * atk - idle;
+        playerMesh.position.y = Math.abs(Math.cos(walkPh)) * 2.5 * walkAmp + (1 - walkAmp) * Math.sin(t * 2) * 0.7;
+        playerMesh.rotation.z = -(0.12 * walkAmp + (player.dashTimer > 0 ? 0.35 : 0) + 0.15 * atk);
+        playerMesh.rotation.y += sword.rotation.y * 0.3;
+        playerMesh.scale.x = player.dashTimer > 0 ? 1.15 : 1;
+        pu.cape.rotation.z = -(0.15 + (moving ? 0.3 : 0) + Math.sin(t * 4) * 0.05);
+        pu.wisps.forEach((w, i) => {
+            const a = t * 2 + i * 2.094;
+            w.position.set(Math.cos(a) * 26, 30 + Math.sin(t * 3 + i) * 6, Math.sin(a) * 26);
+            w.rotation.y = t * 3;
+        });
+
+        enemies.forEach(e => {
+            if (e.isDead) { if (e.mesh) { dynGroup.remove(e.mesh); e.mesh = null; } return; }
+            if (!e.mesh) { e.mesh = makeEnemy(e); dynGroup.add(e.mesh); }
+            const m = e.mesh, u = m.userData;
+            m.position.set(e.x, e.float ? 10 + Math.sin(t * 3 + e.x) * 6 : 0, e.y);
+            u.body.rotation.y = -Math.atan2(player.y - e.y, player.x - e.x);
+            u.mats.forEach(mt => mt.emissive.setHex(e.hitFlashTimer > 0 ? 0xffffff : (e.frozen > 0 ? 0x0e7490 : 0x000000)));
+            const pct = Math.max(0.001, e.hp / e.maxHp);
+            u.fill.scale.set(40 * pct, 4, 1); u.fill.position.x = -20 + 20 * pct;
+        });
+
+        interactables.forEach(it => {
+            if (!it.active) { if (it.mesh) { dynGroup.remove(it.mesh); it.mesh = null; } return; }
+            if (!it.mesh) { it.mesh = makeInter(it); dynGroup.add(it.mesh); }
+            it.mesh.position.set(it.x, it.type === 'portal' ? Math.sin(t * 2) * 4 : 0, it.y);
+            if (it.mesh.userData.spin) it.mesh.userData.spin.forEach(o => o.rotation.y = Math.sin(t) * 0.7);
+            const dr = it.mesh.userData.door;
+            if (dr) {
+                const o = !!it.open;
+                dr.panel.material.color.setHex(o ? 0x22d3ee : 0x7f1d1d);
+                dr.panel.material.emissive.setHex(o ? 0x0891b2 : 0x450a0a);
+                dr.panel.material.opacity = o ? 0.45 : 1;
+                dr.pl.color.setHex(o ? 0x22d3ee : 0xef4444);
+                dr.l1.visible = !o; dr.l2.visible = o;
+            }
+        });
+
+        corpses.forEach(c => {
+            if (!c.mesh) {
+                const g = new THREE.Group();
+                g.add(mk(new THREE.CylinderGeometry(14, 16, 3, 12), M(0x1e1b4b), 0, 1.5, 0));
+                g.add(mk(new THREE.OctahedronGeometry(7), new THREE.MeshBasicMaterial({ color: 0xa78bfa }), 0, 22, 0));
+                g.position.set(c.x, 0, c.y); c.mesh = g; dynGroup.add(g);
+            }
+            c.mesh.children[1].position.y = 22 + Math.sin(t * 3 + c.x) * 4; c.mesh.children[1].rotation.y = t * 2;
+        });
+        allies.forEach(a => {
+            if (a.isDead) return;
+            if (!a.mesh) {
+                a.mesh = makeEnemy(a);
+                a.mesh.userData.mats.forEach(m => m.color.setHex(0x1b1035));
+                a.mesh.userData.body.traverse(o => { if (o.material && o.material.isMeshBasicMaterial) o.material.color.setHex(0xa78bfa); });
+                a.mesh.userData.fill.material.color.setHex(0xa78bfa);
+                dynGroup.add(a.mesh);
+            }
+            const u = a.mesh.userData;
+            a.mesh.position.set(a.x, a.float ? 10 + Math.sin(t * 3 + a.x) * 6 : 0, a.y);
+            u.body.rotation.y = -a.face;
+            u.mats.forEach(m => m.emissive.setHex(a.flash > 0 ? 0xffffff : 0x5b21b6));
+            const pct = Math.max(0.001, a.hp / a.maxHp);
+            u.fill.scale.set(40 * pct, 4, 1); u.fill.position.x = -20 + 20 * pct;
+        });
+
+        const n = Math.min(particles.length, PMAX);
+        for (let i = 0; i < n; i++) {
+            const p = particles[i], k = p.life / p.maxLife;
+            pPos[i * 3] = p.x; pPos[i * 3 + 1] = 22 + (1 - k) * 40; pPos[i * 3 + 2] = p.y;
+            _c.set(p.color).multiplyScalar(k);
+            pCol[i * 3] = _c.r; pCol[i * 3 + 1] = _c.g; pCol[i * 3 + 2] = _c.b;
+        }
+        pGeo.setDrawRange(0, n);
+        pGeo.attributes.position.needsUpdate = true; pGeo.attributes.color.needsUpdate = true;
+    }
+
+    function render3D(timeMs) {
+        sync3D(timeMs / 1000);
+        cam3.position.set(camera.x, 560, camera.y + 400);
+        cam3.lookAt(camera.x, 0, camera.y);
+        sun.position.set(camera.x + 200, 500, camera.y + 200);
+        sun.target.position.set(camera.x, 0, camera.y);
+        renderer.render(scene, cam3);
+    }
+
+    // ==========================================
+    // INPUT HANDLING
+    // ==========================================
+    const keys = { w: false, a: false, s: false, d: false, space: false };
+    const mouse = { x: 0, y: 0, left: false };
+    
+    window.addEventListener('keydown', (e) => {
+        const k = e.key.toLowerCase();
+        if (k === 'w' || e.code === 'KeyW') keys.w = true;
+        if (k === 'a' || e.code === 'KeyA') keys.a = true;
+        if (k === 's' || e.code === 'KeyS') keys.s = true;
+        if (k === 'd' || e.code === 'KeyD') keys.d = true;
+        if (e.code === 'Space') keys.space = true;
+        if (k === 'e' || e.code === 'KeyE') handleInteraction();
+        if (k === 'm' || e.code === 'KeyM') toggleInventory();
+        if (k === 'c' || e.code === 'KeyC') toggleCharMenu();
+        if ((k === 'v' || e.code === 'KeyV') && playerStats.cls === 'monarch') toggleShadowMenu();
+        if (k >= '1' && k <= '5') player.useSkill(parseInt(k) - 1);
+    });
+
+    window.addEventListener('keyup', (e) => {
+        const k = e.key.toLowerCase();
+        if (k === 'w' || e.code === 'KeyW') keys.w = false;
+        if (k === 'a' || e.code === 'KeyA') keys.a = false;
+        if (k === 's' || e.code === 'KeyS') keys.s = false;
+        if (k === 'd' || e.code === 'KeyD') keys.d = false;
+        if (e.code === 'Space') keys.space = false;
+    });
+
+    window.addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; });
+    window.addEventListener('mousedown', (e) => { if (e.button === 0 && e.target === canvas) { mouse.left = true; if (!gameState.isPaused) player.attack(); } });
+    window.addEventListener('mouseup', () => mouse.left = false);
+    document.addEventListener('contextmenu', e => { if (e.target === canvas) e.preventDefault(); });
+
+    // ==========================================
+    // GAME ENTITIES
+    // ==========================================
+    class Player {
+        constructor() {
+            this.x = 0; this.y = 0; this.radius = 20; this.dirAngle = 0;
+            this.attackTimer = 0; this.invulnTimer = 0; this.dashTimer = 0; this.dashCooldown = 0; this.shieldEffect = 0;
+        }
+
+        update(dt) {
+            if (gameState.isPaused) return;
+
+            if (this.attackTimer > 0) this.attackTimer -= dt;
+            if (this.invulnTimer > 0) this.invulnTimer -= dt;
+            if (this.dashCooldown > 0) this.dashCooldown -= dt;
+            if (this.shieldEffect > 0) this.shieldEffect -= dt;
+            playerStats.mana = Math.min(playerStats.maxMana, playerStats.mana + playerStats.manaRegen * dt);
+            
+            playerStats.skills.forEach(s => { if (s.cd > 0) s.cd -= dt; });
+
+            let dx = 0; let dy = 0;
+            let currentSpeed = playerStats.baseSpeed;
+            
+            if (this.dashTimer > 0) {
+                this.dashTimer -= dt;
+                dx = Math.cos(this.dirAngle) * currentSpeed * 2.8 * dt;
+                dy = Math.sin(this.dirAngle) * currentSpeed * 2.8 * dt;
+            } else {
+                if (keys.w) dy -= 1; if (keys.s) dy += 1;
+                if (keys.a) dx -= 1; if (keys.d) dx += 1;
+
+                if (dx !== 0 || dy !== 0) {
+                    const length = Math.sqrt(dx*dx + dy*dy);
+                    dx = (dx/length) * currentSpeed * dt;
+                    dy = (dy/length) * currentSpeed * dt;
+                    if (this.attackTimer <= 0) this.dirAngle = Math.atan2(dy, dx);
+                }
+
+                if (keys.space && this.dashCooldown <= 0) {
+                    this.dashTimer = 0.2; this.dashCooldown = 1.0; this.invulnTimer = 0.3;
+                }
+            }
+
+            const bound = 800;
+            if (this.x + dx > -bound && this.x + dx < bound) this.x += dx;
+            if (this.y + dy > -bound && this.y + dy < bound) this.y += dy;
+
+            if (this.attackTimer <= 0 && this.dashTimer <= 0) {
+                const wm = mouseWorld();
+                this.dirAngle = Math.atan2(wm.y - this.y, wm.x - this.x);
+            }
+
+            if (mouse.left) this.attack();
+        }
+
+        attack() {
+            if (this.attackTimer > 0) return;
+            if (playerStats.cls === 'mage') { this.mageAttack(); return; }
+            this.attackTimer = 0.3;
+
+            const attackRange = 85 + ((playerStats.equipped.weapon && playerStats.equipped.weapon.special === 'reach') ? 45 : 0);
+            const attackArc = Math.PI / 2;
+
+            enemies.forEach(enemy => {
+                if (enemy.isDead) return;
+                const dist = Math.hypot(enemy.x - this.x, enemy.y - this.y);
+                if (dist < attackRange + enemy.radius) {
+                    let angleDiff = Math.abs(Math.atan2(enemy.y - this.y, enemy.x - this.x) - this.dirAngle);
+                    if (angleDiff > Math.PI) angleDiff = 2 * Math.PI - angleDiff;
+
+                    if (angleDiff < attackArc / 2) {
+                        let damage = Math.floor(getTotalAtk() * (0.9 + Math.random() * 0.2));
+                        enemy.takeDamage(weaponHit(enemy, damage));
+                        enemy.x += Math.cos(this.dirAngle) * 25; enemy.y += Math.sin(this.dirAngle) * 25;
+                    }
+                }
+            });
+        }
+        
+        aimPoint(range) {
+            const m = mouseWorld(); let dx = m.x - this.x, dy = m.y - this.y;
+            const d = Math.hypot(dx, dy) || 1;
+            if (d > range) { dx = dx / d * range; dy = dy / d * range; }
+            return { x: Math.max(-780, Math.min(780, this.x + dx)), y: Math.max(-780, Math.min(780, this.y + dy)) };
+        }
+
+        mageAttack() {
+            this.attackTimer = 0.3;
+            let best = null, bd = 1e9;
+            enemies.forEach(e => {
+                if (e.isDead) return;
+                const d = Math.hypot(e.x - this.x, e.y - this.y);
+                let ad = Math.abs(Math.atan2(e.y - this.y, e.x - this.x) - this.dirAngle);
+                if (ad > Math.PI) ad = 2 * Math.PI - ad;
+                if (d < 300 + e.radius && ad < 0.35 && d < bd) { bd = d; best = e; }
+            });
+            const len = best ? bd : 300;
+            for (let i = 1; i <= 8; i++) spawnParticles(this.x + Math.cos(this.dirAngle) * len * i / 8, this.y + Math.sin(this.dirAngle) * len * i / 8, '#22d3ee', 2);
+            if (best) best.takeDamage(weaponHit(best, Math.floor(getTotalAtk() * (0.9 + Math.random() * 0.2) * 0.9)));
+        }
+
+        useSkill(idx) {
+            const sk = playerStats.skills[idx];
+            if (!sk || sk.level === 0 || sk.cd > 0 || gameState.isPaused) return;
+            if (playerStats.mana < sk.mp) { showMessage('มานาไม่พอ!', '#60a5fa'); return; }
+            const atk = getTotalAtk(), lv = sk.level;
+            const inR = (x, y, r) => enemies.filter(e => !e.isDead && Math.hypot(e.x - x, e.y - y) < r + e.radius);
+            let cost = sk.mp;
+            switch (sk.fx) {
+                case 'cleave':
+                    spawnParticles(this.x, this.y, '#60a5fa', 30);
+                    inR(this.x, this.y, sk.r).forEach(e => {
+                        e.takeDamage(Math.floor(atk * (sk.mult + lv * 0.5)));
+                        const a = Math.atan2(e.y - this.y, e.x - this.x);
+                        e.x += Math.cos(a) * sk.kb; e.y += Math.sin(a) * sk.kb;
+                    });
+                    break;
+                case 'heal': {
+                    const h = Math.floor(playerStats.maxHp * (sk.mult + lv * 0.1));
+                    playerStats.hp = Math.min(playerStats.maxHp, playerStats.hp + h);
+                    spawnParticles(this.x, this.y, '#34d399', 20);
+                    showFloatingText(`+${h}`, this.x, this.y - 30, '#34d399');
+                    updateUI();
+                    break;
+                }
+                case 'dash':
+                    this.dashTimer = 0.3; this.invulnTimer = 0.3;
+                    spawnParticles(this.x, this.y, '#facc15', 20);
+                    setTimeout(() => inR(this.x, this.y, 80).forEach(e => e.takeDamage(Math.floor(atk * (sk.mult + lv * 0.5)))), 150);
+                    break;
+                case 'shield':
+                    this.shieldEffect = sk.dur + lv * 1.5; this.invulnTimer = this.shieldEffect;
+                    spawnParticles(this.x, this.y, '#a78bfa', 20);
+                    break;
+                case 'nova':
+                    spawnParticles(this.x, this.y, '#ef4444', 60);
+                    inR(this.x, this.y, sk.r).forEach(e => { e.takeDamage(Math.floor(atk * (sk.mult + lv * 1.5))); if (sk.stun) e.frozen = sk.stun; });
+                    break;
+                case 'fireball': {
+                    const t = this.aimPoint(sk.range);
+                    spawnParticles(t.x, t.y, '#f97316', 50);
+                    inR(t.x, t.y, sk.r).forEach(e => e.takeDamage(Math.floor(atk * (sk.mult + lv * 0.8))));
+                    break;
+                }
+                case 'meteor': {
+                    const t = this.aimPoint(sk.range);
+                    spawnParticles(t.x, t.y, '#fca5a5', 30);
+                    setTimeout(() => {
+                        spawnParticles(t.x, t.y, '#ef4444', 90);
+                        inR(t.x, t.y, sk.r).forEach(e => e.takeDamage(Math.floor(atk * (sk.mult + lv * 1.5))));
+                    }, 800);
+                    break;
+                }
+                case 'blink': {
+                    const t = this.aimPoint(sk.range);
+                    spawnParticles(this.x, this.y, '#22d3ee', 25);
+                    this.x = t.x; this.y = t.y; this.invulnTimer = 0.4;
+                    spawnParticles(this.x, this.y, '#22d3ee', 25);
+                    break;
+                }
+                case 'freeze':
+                    spawnParticles(this.x, this.y, '#67e8f9', 50);
+                    inR(this.x, this.y, sk.r).forEach(e => { e.takeDamage(Math.floor(atk * (sk.mult + lv * 0.4))); e.frozen = 2 + lv * 0.5; });
+                    break;
+                case 'extract':
+                    if (extractShadow(sk) === false) return;
+                    break;
+                case 'summon': {
+                    const c = summonShadows(3 + lv, 8);
+                    if (!c) return;
+                    cost = c; break;
+                }
+                case 'army': {
+                    const c = summonShadows(12, 5);
+                    if (!c) return;
+                    cost = c; break;
+                }
+                case 'domain':
+                    gameState.allyBuff = 8 + lv * 2;
+                    allies.forEach(a => { if (!a.isDead) a.hp = Math.min(a.maxHp, a.hp + a.maxHp * 0.4); });
+                    spawnParticles(this.x, this.y, '#8b5cf6', 60);
+                    showMessage('👑 โดเมนจักรพรรดิ: เงาแข็งแกร่งขึ้น!', '#a78bfa');
+                    break;
+            }
+            sk.cd = sk.maxCd;
+            playerStats.mana = Math.max(0, playerStats.mana - cost);
+        }
+
+        takeDamage(amount) {
+            if (this.invulnTimer > 0) return;
+            
+            let actualDamage = Math.max(1, amount - getTotalDef());
+            playerStats.hp -= actualDamage;
+            this.invulnTimer = 1.0;
+            
+            showFloatingText(`-${actualDamage}`, this.x, this.y - 30, '#ff0000');
+            updateUI();
+
+            if (playerStats.hp <= 0) this.die();
+        }
+
+        die() {
+            showMessage(`คุณตายในดันเจี้ยน... ฟื้นคืนชีพที่เมืองศูนย์กลาง`, '#f87171');
+            playerStats.hp = playerStats.maxHp;
+            loadFloor(0);
+            saveGame();
+            updateUI();
+        }
+    }
+
+    class Enemy {
+        constructor(x, y, floor, isBoss = false) {
+            this.x = x; this.y = y; this.isBoss = isBoss; this.isDead = false;
+            this.radius = isBoss ? 48 : 24;
+            
+            const mobEmojis = ['🐺', '🦇', '🕷️', '🧟', '👻'];
+            this.emoji = isBoss ? '👹' : mobEmojis[Math.floor(Math.random() * mobEmojis.length)];
+            
+            let mult = dungeonMult(floor, isBoss);
+            this.maxHp = Math.floor((isBoss ? 600 : 35) * mult);
+            this.hp = this.maxHp;
+            this.atk = Math.floor((isBoss ? 25 : 9) * mult);
+            this.speed = isBoss ? 70 : 110 + Math.random() * 40;
+            this.goldReward = Math.floor((isBoss ? 150 : 25) * mult);
+            
+            this.hitFlashTimer = 0;
+        }
+
+        update(dt) {
+            if (this.isDead || gameState.isPaused) return;
+            if (this.hitFlashTimer > 0) this.hitFlashTimer -= dt;
+            if (this.frozen > 0) { this.frozen -= dt; return; }
+            this.hitCd = (this.hitCd || 0) - dt;
+
+            let tgt = player, best = Math.hypot(player.x - this.x, player.y - this.y);
+            allies.forEach(a => {
+                if (a.isDead) return;
+                const d = Math.hypot(a.x - this.x, a.y - this.y);
+                if (d < best * 0.8 && d < 260) { tgt = a; best = d; }
+            });
+            const dx = tgt.x - this.x, dy = tgt.y - this.y, dist = Math.hypot(dx, dy) || 1;
+
+            if (dist > this.radius + tgt.radius) {
+                this.x += (dx / dist) * this.speed * dt;
+                this.y += (dy / dist) * this.speed * dt;
+            } else if (tgt === player) {
+                player.takeDamage(this.atk);
+            } else if (this.hitCd <= 0) {
+                tgt.takeDamage(this.atk); this.hitCd = 0.8;
+            }
+        }
+
+        takeDamage(amount) {
+            this.hp -= amount; this.hitFlashTimer = 0.1;
+            showFloatingText(amount.toString(), this.x, this.y - this.radius - 10, '#ffffff');
+            if (this.hp <= 0) this.die();
+        }
+
+        die() {
+            this.isDead = true;
+            if (playerStats.cls === 'monarch') corpses.push({ x: this.x, y: this.y, emoji: this.emoji, isBoss: this.isBoss, radius: this.radius, maxHp: this.maxHp, atk: this.atk, speed: this.speed, ttl: 40, mesh: null });
+            
+            playerStats.gold += this.goldReward;
+            if (this.isBoss) bossLoot(this);
+            spawnParticles(this.x, this.y, '#ef4444', this.isBoss ? 50 : 15);
+            checkFloorClear();
+            updateUI();
+        }
+    }
+
+    class Ally {
+        constructor(sh) {
+            const st = shadowStats(sh);
+            Object.assign(this, { sh, emoji: sh.emoji, isBoss: sh.isBoss, radius: sh.radius * 0.9, maxHp: st.hp, hp: st.hp, atk: st.atk, speed: st.speed, cd: 0, flash: 0, face: 0, isDead: false, mesh: null,
+                x: player.x + (Math.random() - 0.5) * 60, y: player.y + (Math.random() - 0.5) * 60 });
+        }
+        update(dt) {
+            if (this.isDead || gameState.isPaused) return;
+            this.cd -= dt; if (this.flash > 0) this.flash -= dt;
+            let tgt = null, bd = 420;
+            enemies.forEach(e => {
+                if (e.isDead) return;
+                const d = Math.hypot(e.x - this.x, e.y - this.y), dp = Math.hypot(e.x - player.x, e.y - player.y);
+                if (d < bd && dp < 520) { bd = d; tgt = e; }
+            });
+            const buff = gameState.allyBuff > 0 ? 1.8 : 1;
+            let gx = player.x, gy = player.y, stop = 90;
+            if (tgt) { gx = tgt.x; gy = tgt.y; stop = this.radius + tgt.radius; }
+            const dx = gx - this.x, dy = gy - this.y, dist = Math.hypot(dx, dy) || 1;
+            this.face = Math.atan2(dy, dx);
+            if (dist > stop) {
+                const s = Math.min(this.speed * (buff > 1 ? 1.25 : 1) * dt, dist - stop + 1);
+                this.x += dx / dist * s; this.y += dy / dist * s;
+            } else if (tgt && this.cd <= 0) {
+                tgt.takeDamage(Math.floor(this.atk * buff)); this.cd = 0.7;
+            }
+        }
+        takeDamage(a) {
+            if (this.isDead) return;
+            this.hp -= a; this.flash = 0.1;
+            showFloatingText(String(a), this.x, this.y - 30, '#c4b5fd');
+            if (this.hp <= 0) this.die();
+        }
+        die() {
+            this.isDead = true;
+            spawnParticles(this.x, this.y, '#7c3aed', 25);
+            if (this.mesh) { dynGroup.remove(this.mesh); this.mesh = null; }
+        }
+    }
+
+    class Interactable {
+        constructor(x, y, type) {
+            this.x = x; this.y = y; this.type = type; this.active = true; this.radius = 30; this.animPhase = 0;
+        }
+
+        update(dt) {
+            if (!this.active) return;
+            this.animPhase += dt * 2;
+            if (this.type === 'door') {
+                this.msgCd = (this.msgCd || 0) - dt;
+                const left = enemies.filter(e => !e.isDead).length;
+                this.open = left === 0;
+                if (Math.hypot(player.x - this.x, player.y - this.y) < 60 && !this.used) {
+                    if (this.open) {
+                        this.used = true;
+                        setTimeout(() => {
+                            if (isBossFloor(gameState.floor)) { completeDungeon(); }
+                            else loadFloor(gameState.floor + 1);
+                        }, 0);
+                    } else if (this.msgCd <= 0) {
+                        showMessage(`🔒 ประตูถูกล็อก! กำจัดศัตรูให้หมดก่อน (เหลือ ${left})`, '#ef4444');
+                        this.msgCd = 2.5;
+                    }
+                }
+                return;
+            }
+
+            const dist = Math.hypot(player.x - this.x, player.y - this.y);
+            if (dist < this.radius + 50) {
+                gameState.interactTarget = this;
+            } else if (gameState.interactTarget === this) {
+                gameState.interactTarget = null;
+            }
+        }
+
+        interact() {
+            if (!this.active) return;
+            if (this.type === 'portal') {
+                loadFloor(gameState.floor + 1);
+            } else if (this.type === 'shop') {
+                gameState.isPaused = true;
+                gameState.shopOpen = true;
+                document.getElementById('shop-modal').style.display = 'block';
+            } else if (this.type === 'chest') {
+                this.active = false;
+                openChest();
+            }
+        }
+    }
+
+    // ==========================================
+    // SYSTEMS & LOGIC
+    // ==========================================
+    let player = new Player();
+    let enemies = [];
+    let interactables = [];
+    let particles = [];
+    let decorations = [];
+
+    function init() {
+        applyClass('knight'); renderClassCards();
+        loadFloor(0);
+        updateUI();
+        gameState.lastTime = performance.now();
+        requestAnimationFrame(gameLoop);
+    }
+
+    function loadFloor(fNum) {
+        loadFloor2D(fNum);
+        if (fNum > 0) { spawnInteractable(0, -775, 'door'); applyDungeonMods(); }
+        else { gameState.dungeon = null; }
+        gameState.interactTarget = null; corpses = [];
+        allies = allies.filter(a => !a.isDead);
+        allies.forEach(a => { a.x = player.x + (Math.random() - 0.5) * 60; a.y = player.y + (Math.random() - 0.5) * 60; a.mesh = null; });
+        build3DFloor(fNum);
+    }
+    
+    function loadFloor2D(fNum) {
+        gameState.floor = fNum;
+        player.x = 0; player.y = 0;
+        enemies = []; interactables = []; decorations = [];
+        
+        for(let i = 0; i < 35; i++) {
+            let dx = (Math.random() - 0.5) * 1600; let dy = (Math.random() - 0.5) * 1600;
+            if (Math.hypot(dx, dy) < 180) continue;
+            let dEmoji = '🪨';
+            if (fNum === 0) dEmoji = ['🌲', '🌳', '🏕️', '⛲', '🌷', '🏮'][Math.floor(Math.random() * 6)];
+            else if (isBossFloor(fNum)) dEmoji = ['🔥', '💀', '🌋', '🩸', '⛓️'][Math.floor(Math.random() * 5)];
+            else dEmoji = ['🪨', '🦴', '🕸️', '🍄', '🪵'][Math.floor(Math.random() * 5)];
+            decorations.push({ x: dx, y: dy, emoji: dEmoji, size: 22 + Math.random() * 35 });
+        }
+        
+        if (fNum === 0) {
+            spawnInteractable(0, -150, 'shop');
+            
+            for(let i=0; i<6; i++) {
+                let x = -500 + (i * 200); 
+                let y = -450;
+                let it = new Interactable(x, y, 'gate');
+                it.info = { tier: i, rank: GATE_RANKS[i], color: GATE_COLORS[i], floors: 3 + i, mod: { key: 'none', name: 'ปกติ', icon: '🌀' } };
+                interactables.push(it);
+            }
+            showMessage("เมืองศูนย์กลาง (พื้นที่ปลอดภัย)", '#60a5fa');
+        } else if (isBossFloor(fNum)) {
+            enemies.push(new Enemy(0, -320, fNum, true));
+            showMessage("⚠️ บอสประจำดันเจี้ยนปรากฏตัว! ⚠️", '#ef4444');
+        } else {
+            let eCount = dungeonCount(fNum);
+            for(let i=0; i<eCount; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const dist = 220 + Math.random() * 450;
+                enemies.push(new Enemy(Math.cos(angle)*dist, Math.sin(angle)*dist, fNum, false));
+            }
+            showMessage(`ดันเจี้ยน ชั้นที่ ${fNum} — กำจัดศัตรูให้หมด`, '#a78bfa');
+        }
+        updateUI();
+    }
+
+    function spawnInteractable(x, y, type) { interactables.push(new Interactable(x, y, type)); }
+
+    function checkFloorClear() {
+        if (gameState.floor > 0 && enemies.every(e => e.isDead)) {
+            spawnInteractable(0, 0, 'chest');
+            showMessage("ศัตรูถูกกำจัดหมดแล้ว! ประตูเปิดแล้ว", '#fbbf24');
+        }
+    }
+
+    function generateRandomEquip(type) {
+        let roll = Math.random() * 100, cWeight = 0, selectedRank = RANKS[0];
+        for (let r of RANKS) { cWeight += r.weight; if (roll <= cWeight) { selectedRank = r; break; } }
+        let statBonus = Math.floor((type === 'weapon' ? 6 : 3) * selectedRank.mult) + Math.floor(Math.random()*4);
+        return {
+            id: Date.now() + Math.random(),
+            name: `${type === 'weapon' ? 'อาวุธ' : 'เกราะ'}สุ่ม [${selectedRank.name}]`,
+            type: type,
+            rank: selectedRank,
+            stat: statBonus
+        };
+    }
+
+    function openChest() {
+        let isWeapon = Math.random() > 0.5;
+        let item = generateRandomEquip(isWeapon ? 'weapon' : 'armor');
+        let goldFound = Math.floor(100 + Math.random()*150);
+        
+        playerStats.gold += goldFound;
+        playerStats.inventory.push(item);
+        
+        let chestBonus = '';
+        if (isBossFloor(gameState.floor)) {
+            const sp = makeSpecialWeapon(true);
+            playerStats.inventory.push(sp);
+            chestBonus = `<div class="text-2xl mt-3 rank-${sp.rank.name}">✨ ${sp.name}</div><div class="text-sm">(ATK +${sp.stat}) ${sp.desc}</div>`;
+        }
+        
+        const msg = document.getElementById('message-text');
+        msg.innerHTML = `
+            <div class="text-lg">ได้รับทอง ${goldFound} 💰</div>
+            <div class="text-3xl mt-2 rank-${item.rank.name}">${item.name}</div>
+            <div class="text-sm mt-1">(${isWeapon ? 'ATK' : 'DEF'} +${item.stat})</div>
+            ${chestBonus}<div class="text-xs text-gray-300 mt-2">เปิดกระเป๋า [M] และคลิกขวาเพื่อสวมใส่</div>
+        `;
+        const popup = document.getElementById('message-popup');
+        popup.style.opacity = '1';
+        setTimeout(() => popup.style.opacity = '0', 3500);
+        
+        saveGame();
+        updateUI(); renderInventory();
+    }
+
+    // ==========================================
+    // UI & EFFECTS
+    // ==========================================
+    let msgTimeout;
+    function showMessage(text, color = '#ffffff') {
+        const popup = document.getElementById('message-popup');
+        const textEl = document.getElementById('message-text');
+        textEl.innerHTML = text; textEl.style.color = color; popup.style.opacity = '1';
+        clearTimeout(msgTimeout); msgTimeout = setTimeout(() => { popup.style.opacity = '0'; }, 2200);
+    }
+
+    function showFloatingText(text, x, y, color) {
+        const pv = new THREE.Vector3(x, 45, y).project(cam3);
+        const screenX = (pv.x + 1) / 2 * window.innerWidth;
+        const screenY = (1 - pv.y) / 2 * window.innerHeight;
+        const el = document.createElement('div');
+        el.className = 'floating-text text-xl';
+        el.style.left = `${screenX}px`; el.style.top = `${screenY}px`;
+        el.style.color = color; el.innerText = text;
+        document.querySelector('.ui-layer').appendChild(el);
+        setTimeout(() => el.remove(), 1000);
+    }
+
+    function spawnParticles(x, y, color, count) {
+        for(let i=0; i<count; i++) particles.push({ x: x, y: y, vx: (Math.random() - 0.5) * 220, vy: (Math.random() - 0.5) * 220, life: 1.0, maxLife: 1.0, color: color });
+    }
+
+    function updateParticles(dt) {
+        for(let i = particles.length - 1; i >= 0; i--) {
+            let p = particles[i]; p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
+            if (p.life <= 0) particles.splice(i, 1);
+        }
+    }
+
+    function updateUI() {
+        document.getElementById('ui-player-name').innerText = playerStats.name;
+        document.getElementById('ui-gold').innerText = playerStats.gold;
+        
+        let hpPct = Math.max(0, (playerStats.hp / playerStats.maxHp) * 100);
+        document.getElementById('ui-hp-bar').style.width = `${hpPct}%`;
+        document.getElementById('ui-hp-text').innerText = `${Math.floor(playerStats.hp)} / ${playerStats.maxHp}`;
+        
+        document.getElementById('ui-atk').innerText = getTotalAtk();
+        document.getElementById('ui-def').innerText = getTotalDef();
+        
+        const floorText = document.getElementById('ui-floor');
+        if (gameState.floor === 0) {
+            floorText.innerText = "เมืองศูนย์กลาง (Hub)";
+            floorText.className = "text-xl font-bold text-green-400";
+        } else if (isBossFloor(gameState.floor)) {
+            floorText.innerText = `[${gameState.dungeon ? gameState.dungeon.rank : ''}] ชั้นบอส (Boss Room)`;
+            floorText.className = "text-xl font-bold text-red-500 animate-pulse";
+        } else {
+            floorText.innerText = `[${gameState.dungeon ? gameState.dungeon.rank : ''}] ชั้นที่ ${gameState.floor}/${gameState.dungeon ? gameState.dungeon.floors : '?'}`;
+            floorText.className = "text-xl font-bold text-purple-400";
+        }
+        
+        const skillBar = document.getElementById('skill-bar');
+        skillBar.innerHTML = '';
+        playerStats.skills.forEach((skill, i) => {
+            const isLocked = skill.level === 0;
+            skillBar.innerHTML += `
+                <div class="skill-slot" title="${skill.name} (Lv.${skill.level}) - ${skill.desc}">
+                    <div class="skill-key">${i+1}</div>
+                    ${skill.icon}
+                    ${isLocked ? '<div class="skill-lock">🔒</div>' : ''}
+                    <div id="skill-cd-bar-${i}" class="skill-cd"></div>
+                    <div id="skill-cd-text-${i}" class="absolute inset-0 flex items-center justify-center text-white font-bold drop-shadow-md text-sm z-10 pointer-events-none"></div>
+                </div>
+            `;
+        });
+    }
+    
+    function updateSkillCooldowns() {
+        updateMana();
+        for(let i = 0; i < playerStats.skills.length; i++) {
+            let skill = playerStats.skills[i];
+            const cdBar = document.getElementById(`skill-cd-bar-${i}`);
+            const cdText = document.getElementById(`skill-cd-text-${i}`);
+            if (cdBar && cdText && !gameState.isPaused) {
+                if (skill.cd > 0) {
+                    cdBar.style.height = `${(skill.cd / skill.maxCd) * 100}%`;
+                    cdText.innerText = Math.ceil(skill.cd);
+                } else {
+                    cdBar.style.height = '0%';
+                    cdText.innerText = '';
+                }
+            }
+        }
+    }
+
+    // ==========================================
+    // INTERACTION, MENUS & INVENTORY (DOM)
+    // ==========================================
+    function handleInteraction() {
+        if (gameState.interactTarget) {
+            if (gameState.interactTarget.type === 'gate') startDungeon(gameState.interactTarget.info); else gameState.interactTarget.interact();
+        }
+    }
+
+    function toggleInventory() {
+        const modal = document.getElementById('inventory-modal');
+        if (modal.style.display === 'block') { modal.style.display = 'none'; if(!gameState.shopOpen) gameState.isPaused = false; } 
+        else { if(!gameState.shopOpen) closeModals(); modal.style.display = 'block'; gameState.isPaused = true; renderInventory(); }
+    }
+    
+    function toggleCharMenu() {
+        const modal = document.getElementById('char-modal');
+        if (modal.style.display === 'block') { modal.style.display = 'none'; gameState.isPaused = false; } 
+        else { closeModals(); modal.style.display = 'block'; gameState.isPaused = true; renderCharMenu(); }
+    }
+
+    function showDashboard() {
+        closeModals();
+        gameState.isPaused = true;
+        document.getElementById('dashboard-modal').style.display = 'block';
+        
+        let data = JSON.parse(localStorage.getItem('dungeonDashBoard') || '{}');
+        let html = '';
+        const dispRanks = ['S', 'A', 'B', 'C', 'D', 'E'];
+        dispRanks.forEach(r => {
+            html += `<div class="bg-black/60 p-3 rounded border border-gray-600">
+                <h3 class="text-xl font-bold text-center rank-${r} mb-2 border-b border-gray-700/50 pb-1">แรงก์ ${r}</h3>`;
+            let records = data[r] || [];
+            if(records.length === 0) {
+                html += `<div class="text-center text-gray-500 text-sm py-4">-- ยังไม่มีสถิติ --</div>`;
+            } else {
+                records.forEach((rec, i) => {
+                    let color = i === 0 ? 'text-yellow-400 font-bold text-base' : (i === 1 ? 'text-gray-300' : (i === 2 ? 'text-yellow-600' : 'text-gray-400'));
+                    let icon = i === 0 ? '🥇' : (i === 1 ? '🥈' : (i === 2 ? '🥉' : `#${i+1}`));
+                    html += `<div class="flex justify-between items-center ${color} text-sm py-1 border-b border-gray-700/50">
+                        <span class="truncate pr-2">${icon} ${rec.name}</span>
+                        <span class="font-mono tracking-wider">${fmtTime(rec.time)}</span>
+                    </div>`;
+                });
+            }
+            html += `</div>`;
+        });
+        document.getElementById('dash-grid').innerHTML = html;
+    }
+
+    function closeModals() {
+        document.getElementById('inventory-modal').style.display = 'none';
+        document.getElementById('shop-modal').style.display = 'none';
+        document.getElementById('char-modal').style.display = 'none';
+        document.getElementById('shadow-modal').style.display = 'none';
+        document.getElementById('dashboard-modal').style.display = 'none';
+        gameState.shopOpen = false; gameState.isPaused = false;
+    }
+
+    function renderInventory() {
+        const container = document.getElementById('inv-container');
+        container.innerHTML = '';
+        const w = playerStats.equipped.weapon, a = playerStats.equipped.armor;
+        document.getElementById('equip-weapon').innerHTML = w ? `<span class="rank-${w.rank.name}">${w.name} (+${w.stat})</span>` : 'ไม่มี';
+        document.getElementById('equip-armor').innerHTML = a ? `<span class="rank-${a.rank.name}">${a.name} (+${a.stat})</span>` : 'ไม่มี';
+
+        const totalSlots = Math.max(16, playerStats.inventory.length + (4 - playerStats.inventory.length % 4));
+        for (let i = 0; i < totalSlots; i++) {
+            const item = playerStats.inventory[i];
+            const slot = document.createElement('div'); slot.className = 'inv-slot';
+            if (item) {
+                const isEquipped = (playerStats.equipped.weapon?.id === item.id) || (playerStats.equipped.armor?.id === item.id);
+                slot.innerHTML = `<div class="icon rank-${item.rank.name}">${item.type === 'weapon' ? '⚔️' : '🛡️'}</div>${isEquipped ? '<div class="equipped-indicator">E</div>' : ''}`;
+                slot.title = `${item.name}\n${item.type === 'weapon' ? 'ATK' : 'DEF'} +${item.stat}\n(คลิกขวาเพื่อ${gameState.shopOpen ? `ขาย ได้ ${Math.floor(item.stat * item.rank.mult * 5)} ทอง` : 'สวมใส่'})${item.desc ? '\n★ ' + item.desc : ''}`;
+                slot.addEventListener('contextmenu', (e) => { e.preventDefault(); if (gameState.shopOpen) sellItem(item, i); else equipItem(item); });
+            }
+            container.appendChild(slot);
+        }
+    }
+    
+    function sellItem(item, index) {
+        let isEquipped = (playerStats.equipped.weapon?.id === item.id) || (playerStats.equipped.armor?.id === item.id);
+        if (isEquipped) { showMessage("ไม่สามารถขายไอเทมที่สวมใส่อยู่ได้", '#ef4444'); return; }
+        let sellPrice = Math.floor(item.stat * item.rank.mult * 5);
+        playerStats.gold += sellPrice; playerStats.inventory.splice(index, 1);
+        spawnParticles(player.x, player.y, '#facc15', 10);
+        showMessage(`ขาย ${item.name} ได้รับ ${sellPrice} ทอง`, '#facc15');
+        saveGame();
+        updateUI(); renderInventory();
+    }
+
+    function equipItem(item) {
+        if (item.type === 'weapon') playerStats.equipped.weapon = (playerStats.equipped.weapon?.id === item.id) ? null : item;
+        else if (item.type === 'armor') playerStats.equipped.armor = (playerStats.equipped.armor?.id === item.id) ? null : item;
+        saveGame();
+        updateUI(); renderInventory();
+    }
+
+    function buyShopItem(type) {
+        let cost = 0;
+        if(type === 'statPt') cost = 100;
+        if(type === 'skillPt') cost = 500;
+        if(type === 'gachaWep' || type === 'gachaArm') cost = 1000;
+        if(type === 'heal') cost = 50;
+
+        if (playerStats.gold >= cost) {
+            if (type === 'heal' && playerStats.hp === playerStats.maxHp) return;
+            
+            playerStats.gold -= cost;
+            if (type === 'heal') playerStats.hp = playerStats.maxHp;
+            if (type === 'statPt') playerStats.statPoints += 1;
+            if (type === 'skillPt') playerStats.skillPoints += 1;
+            if (type === 'gachaWep') playerStats.inventory.push(generateRandomEquip('weapon'));
+            if (type === 'gachaArm') playerStats.inventory.push(generateRandomEquip('armor'));
+
+            saveGame();
+            updateUI(); spawnParticles(player.x, player.y, '#34d399', 15);
+            showMessage(type.includes('gacha') ? "สุ่มอุปกรณ์สำเร็จ! เปิดกระเป๋าเพื่อดู" : "ซื้อสำเร็จ!", '#34d399');
+        } else {
+            showMessage("ทองไม่พอ!", '#ef4444');
+        }
+    }
+    
+    // --- Stat & Skill Menus ---
+    function setUpgMulti(val) {
+        gameState.upgMulti = val;
+        document.querySelectorAll('.upg-btn').forEach(btn => btn.classList.remove('ring', 'ring-yellow-400'));
+        document.getElementById(`upg-btn-${val}`).classList.add('ring', 'ring-yellow-400');
+    }
+
+    function renderCharMenu() {
+        document.getElementById('stat-pts').innerText = playerStats.statPoints;
+        document.getElementById('stat-hp').innerText = playerStats.maxHp;
+        document.getElementById('stat-atk').innerText = playerStats.baseAtk;
+        document.getElementById('stat-def').innerText = playerStats.baseDef;
+        document.getElementById('stat-spd').innerText = playerStats.baseSpeed;
+        document.getElementById('skill-pts').innerText = playerStats.skillPoints;
+        
+        const skillContainer = document.getElementById('skill-list-container');
+        skillContainer.innerHTML = '';
+        
+        playerStats.skills.forEach((skill, i) => {
+            skillContainer.innerHTML += `
+                <div class="flex justify-between items-center bg-gray-800 p-2 rounded">
+                    <div class="text-sm w-3/4">
+                        <span class="font-bold text-yellow-300">[${i+1}] ${skill.icon} ${skill.name}</span>
+                        <span class="text-gray-400 block text-xs overflow-hidden text-ellipsis whitespace-nowrap">${skill.desc} (Lv.${skill.level})</span>
+                    </div>
+                    <button onclick="upgradeSkill(${i})" class="${playerStats.skillPoints > 0 ? 'bg-purple-600 hover:bg-purple-500' : 'bg-gray-600 cursor-not-allowed'} px-3 py-1 rounded text-xs font-bold text-white transition w-1/4 min-w-fit">
+                        อัพเกรด
+                    </button>
+                </div>
+            `;
+        });
+    }
+    
+    function upgradeStat(type) {
+        const cost = gameState.upgMulti;
+        if (playerStats.statPoints < cost) { showMessage("พอยต์ไม่พอ!", '#ef4444'); return; }
+        
+        playerStats.statPoints -= cost;
+        if (type === 'hp') { playerStats.maxHp += 15 * cost; playerStats.hp += 15 * cost; }
+        if (type === 'atk') playerStats.baseAtk += 2 * cost;
+        if (type === 'def') playerStats.baseDef += 1 * cost;
+        if (type === 'spd') playerStats.baseSpeed += 5 * cost;
+        
+        saveGame();
+        updateUI(); renderCharMenu();
+    }
+    
+    function upgradeSkill(index) {
+        if (playerStats.skillPoints <= 0) return;
+        playerStats.skills[index].level++;
+        playerStats.skillPoints--;
+        saveGame();
+        updateUI(); renderCharMenu();
+    }
+
+    // ==========================================
+    // RENDER & LOOP
+    // ==========================================
+    function gameLoop(time) {
+        const dt = Math.min((time - gameState.lastTime) / 1000, 0.1);
+        gameState.lastTime = time;
+
+        if (!gameState.isPaused) {
+            player.update(dt);
+            enemies.forEach(e => e.update(dt));
+            allies.forEach(a => a.update(dt));
+            if (gameState.dungeon) gameState.dungeon.time += dt;
+            allies = allies.filter(a => !a.isDead);
+            if (gameState.allyBuff > 0) gameState.allyBuff -= dt;
+            corpses.forEach(c => c.ttl -= dt);
+            corpses.filter(c => c.ttl <= 0).forEach(removeCorpse);
+            interactables.forEach(i => i.update(dt));
+            updateParticles(dt);
+            updateSkillCooldowns();
+            
+            camera.x += (player.x - camera.x) * 5 * dt;
+            camera.y += (player.y - camera.y) * 5 * dt;
+
+            const prompt = document.getElementById('interaction-prompt');
+            if (gameState.interactTarget && !gameState.isPaused) {
+                prompt.style.display = 'block';
+                if (gameState.interactTarget.type === 'portal') prompt.innerText = '[E] ทางไปต่อ';
+                else if (gameState.interactTarget.type === 'shop') prompt.innerText = '[E] เปิดร้านค้าเวทมนตร์';
+                else if (gameState.interactTarget.type === 'chest') prompt.innerText = '[E] เปิดหีบสมบัติ';
+                else if (gameState.interactTarget.type === 'gate') prompt.innerText = gateText(gameState.interactTarget.info);
+            } else {
+                prompt.style.display = 'none';
+            }
+        }
+
+        render3D(time);
+        requestAnimationFrame(gameLoop);
+    }
+
+    function startGame() {
+        const nameInput = document.getElementById('player-name').value.trim();
+        const pinInput = document.getElementById('player-pin').value.trim();
+        
+        if(!nameInput || pinInput.length !== 6 || !/^\d{6}$/.test(pinInput)) {
+            alert("กรุณาตั้งชื่อ และกำหนดรหัสผ่านด้วยตัวเลข 6 หลักให้ครบถ้วน");
+            return;
+        }
+
+        let accounts = JSON.parse(localStorage.getItem('dungeon_accounts') || '{}');
+        
+        if (accounts[nameInput]) {
+            if (accounts[nameInput].pin !== pinInput) {
+                alert("❌ รหัสผ่านไม่ถูกต้อง! กรุณาลองใหม่อีกครั้ง");
+                return;
+            }
+            // โหลดข้อมูลเก่า
+            playerStats = accounts[nameInput].stats;
+            recolorPlayer(playerStats.cls);
+        } else {
+            // สร้างไอดีใหม่
+            playerStats.name = nameInput;
+            accounts[nameInput] = { pin: pinInput, stats: playerStats };
+            localStorage.setItem('dungeon_accounts', JSON.stringify(accounts));
+        }
+
+        updateUI();
+        updateMana();
+        
+        const startScreen = document.getElementById('start-screen');
+        startScreen.style.opacity = '0';
+        setTimeout(() => {
+            startScreen.style.display = 'none';
+            gameState.isPaused = false;
+            // ตั้งให้เซฟอัตโนมัติทุกๆ 10 วินาที
+            setInterval(saveGame, 10000);
+        }, 500);
+    }
+
+    window.onload = init;
+
+</script>
+</body>
+</html>
+```eof
+
+โค้ดชุดใหม่ด้านบนทำมาให้จบครบในตัวเดียวเลยครับ เอาโค้ดใหม่ทั้งหมดไปวางทับในไฟล์ได้เลย ไม่ต้องแยกไฟล์ `leaderboard.html` แล้วครับ!
