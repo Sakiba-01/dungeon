@@ -97,42 +97,40 @@
 <canvas id="game-canvas"></canvas>
 
 <!-- Start Screen -->
-<div id="start-screen" class="absolute inset-0 bg-gray-900/95 z-[100] flex flex-col items-center justify-start md:justify-center py-4 overflow-y-auto text-white backdrop-blur-sm transition-opacity duration-500 pointer-events-auto">
-    <div class="text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-b from-blue-400 via-indigo-500 to-purple-600 mb-2 drop-shadow-[0_0_20px_rgba(99,102,241,0.6)] uppercase tracking-wider text-center">
+<div id="start-screen" style="z-index: 1000;" class="fixed inset-0 bg-gray-900/95 flex flex-col items-center justify-center p-4 overflow-y-auto text-white backdrop-blur-md transition-opacity duration-500 pointer-events-auto">
+    <div class="text-6xl md:text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-b from-blue-400 via-indigo-500 to-purple-600 mb-2 drop-shadow-[0_0_20px_rgba(99,102,241,0.6)] uppercase tracking-wider text-center">
         dungeon Solo
     </div>
-    <div class="text-3xl font-bold text-gray-300 mb-6 tracking-[0.3em]">
+    <div class="text-2xl md:text-3xl font-bold text-gray-300 mb-8 tracking-[0.3em] text-center">
         TIME ATTACK
     </div>
     
-    <div class="bg-black/60 p-6 rounded-xl border border-gray-700 w-full max-w-md text-center mb-6">
+    <div class="bg-black/60 p-6 rounded-xl border border-gray-700 w-full max-w-md text-center mb-6 shadow-2xl">
         <h2 class="text-xl font-bold text-blue-400 mb-4">เข้าสู่ระบบ / สร้างตัวละครใหม่</h2>
         <div class="mb-3">
-            <input type="text" id="player-name" placeholder="ชื่อนักผจญภัย (Username)" class="px-4 py-3 rounded-lg text-black font-bold text-lg text-center w-full focus:outline-none focus:ring-4 focus:ring-blue-500">
+            <input type="text" id="player-name" placeholder="ชื่อนักผจญภัย (Username)" class="px-4 py-3 rounded-lg text-black font-bold text-lg text-center w-full focus:outline-none focus:ring-4 focus:ring-blue-500 transition">
         </div>
         <div class="mb-4">
-            <input type="password" id="player-pin" placeholder="รหัสผ่าน 6 หลัก (PIN)" maxlength="6" pattern="\d{6}" class="px-4 py-3 rounded-lg text-black font-bold text-lg text-center w-full tracking-[0.5em] focus:outline-none focus:ring-4 focus:ring-blue-500">
-            <p class="text-xs text-gray-400 mt-2 text-left">* หากเป็นผู้เล่นใหม่ ให้กรอกชื่อและรหัสผ่านแล้วกด 'สร้างบัญชีใหม่'<br>* บัญชีเดิม จะสามารถเข้าสู่ระบบเพื่อเล่นต่อได้ทันที</p>
+            <input type="password" id="player-pin" placeholder="รหัสผ่าน 6 หลัก (PIN)" maxlength="6" pattern="\d{6}" class="px-4 py-3 rounded-lg text-black font-bold text-lg text-center w-full tracking-[0.5em] focus:outline-none focus:ring-4 focus:ring-blue-500 transition">
+            <p class="text-xs text-gray-400 mt-2 text-left leading-relaxed">* หากเป็นผู้เล่นใหม่ ให้กรอกชื่อและรหัสผ่านแล้วกด 'สร้างบัญชีใหม่'<br>* บัญชีเดิม จะสามารถเข้าสู่ระบบเพื่อเล่นต่อได้ทันที</p>
         </div>
     </div>
     
-    <div class="text-xs text-gray-500 mb-4 text-center px-4">* ไอดีใหม่เริ่มต้นด้วย 5,000 ทอง และจะได้เลือกอาชีพหลังเข้าสู่ระบบ (เลือกฟรีครั้งเดียว)</div>
-    
-    <div class="flex flex-col md:flex-row gap-4">
-        <button onclick="loginAccount()" class="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-[0_0_15px_rgba(59,130,246,0.6)] border border-blue-400/30">
+    <div class="flex flex-col sm:flex-row gap-4 w-full max-w-md px-4">
+        <button onclick="loginAccount()" class="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-[0_0_15px_rgba(59,130,246,0.6)] border border-blue-400/30">
             เข้าสู่ระบบ
         </button>
-        <button onclick="registerAccount()" class="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-[0_0_15px_rgba(168,85,247,0.6)] border border-purple-400/30">
+        <button onclick="registerAccount()" class="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 rounded-xl text-xl font-bold transition-all transform hover:scale-105 shadow-[0_0_15px_rgba(168,85,247,0.6)] border border-purple-400/30">
             สร้างบัญชีใหม่
         </button>
     </div>
 </div>
 
 <!-- Class Select Screen -->
-<div id='class-screen' style='display:none' class='absolute inset-0 bg-gray-900/95 z-[100] flex-col items-center justify-start md:justify-center py-4 overflow-y-auto text-white backdrop-blur-sm pointer-events-auto transition-opacity duration-500'>
+<div id='class-screen' style='display:none; z-index: 1000;' class='fixed inset-0 bg-gray-900/95 flex-col items-center justify-center p-4 overflow-y-auto text-white backdrop-blur-sm pointer-events-auto transition-opacity duration-500'>
     <div class='text-4xl font-extrabold text-yellow-300 mb-2 text-center'>เลือกอาชีพของคุณ</div>
     <div class='text-gray-400 mb-6 text-sm text-center px-4'>เลือกได้ฟรีครั้งนี้ครั้งเดียว — หลังจากนี้ต้องเสียทองเพื่อเปลี่ยนอาชีพที่ร้านค้า</div>
-    <div id='class-cards' class='flex gap-3 mb-6 flex-wrap justify-center px-4'></div>
+    <div id='class-cards' class='flex gap-3 mb-6 flex-wrap justify-center px-4 max-w-4xl'></div>
     <button onclick='confirmClass()' class='px-10 py-4 bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-400 hover:to-orange-500 rounded-xl text-2xl font-bold transition-all transform hover:scale-105 shadow-lg border border-yellow-300/40'>ยืนยันอาชีพ ✔</button>
 </div>
 
@@ -311,7 +309,7 @@
 
 <script>
     // ==========================================
-    // AUDIO SYSTEM (Web Audio API) - No External Files Needed
+    // AUDIO SYSTEM (Web Audio API)
     // ==========================================
     let audioCtx = null;
     function initAudio() {
@@ -434,7 +432,28 @@
 
     function logout() {
         saveGame();
-        location.reload(); 
+        
+        // Stop Auto Save
+        if (_autoSave) { clearInterval(_autoSave); _autoSave = null; }
+        
+        // Soft Reset without Location Reload
+        gameState.isPaused = true;
+        closeModals();
+        
+        // Clear input fields
+        document.getElementById('player-name').value = '';
+        document.getElementById('player-pin').value = '';
+        
+        // Return to Login Screen gracefully
+        const startScreen = document.getElementById('start-screen');
+        startScreen.style.display = 'flex';
+        setTimeout(() => { startScreen.style.opacity = '1'; }, 50);
+        
+        // Hide class screen if opened
+        document.getElementById('class-screen').style.display = 'none';
+        
+        // Reset to Hub Floor just to be safe
+        if(gameState.floor !== 0) loadFloor(0);
     }
     
     // ==========================================
@@ -525,4 +544,21 @@
         const w = playerStats.equipped.weapon;
         if (!w || !w.special) return dmg;
         if (w.special === 'crit' && Math.random() < 0.25) { dmg = Math.floor(dmg * 2.5); spawnParticles(e.x, e.y, '#facc15', 8); }
-        else if (w.special === 'execute' && e.hp < e.maxHp * 0.3) { dmg *= 2;
+        else if (w.special === 'execute' && e.hp < e.maxHp * 0.3) { dmg *= 2; spawnParticles(e.x, e.y, '#ef4444', 8); }
+        else if (w.special === 'lifesteal') { playerStats.hp = Math.min(playerStats.maxHp, playerStats.hp + Math.max(1, Math.floor(dmg * 0.06))); updateUI(); }
+        else if (w.special === 'manasteal') playerStats.mana = Math.min(playerStats.maxMana, playerStats.mana + 3);
+        return dmg;
+    }
+
+    function bigPopup(html, ms) {
+        const popup = document.getElementById('message-popup');
+        document.getElementById('message-text').innerHTML = html;
+        popup.style.opacity = '1';
+        clearTimeout(msgTimeout);
+        msgTimeout = setTimeout(() => { popup.style.opacity = '0'; }, ms);
+    }
+
+    function bossLoot(e) {
+        const d = gameState.dungeon; if (!d) return;
+        const gold = Math.floor(300 * (1 + d.tier * 0.8));
+        playerStats.gold += gold
