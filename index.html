@@ -183,31 +183,35 @@
     <div id="inv-container" class="inv-grid"></div>
 </div>
 
-<!-- Shop Modal (Updated for Manual Selling) -->
-<div id="shop-modal" class="modal text-center" style="min-width: 400px;">
+<!-- Shop Modal -->
+<div id="shop-modal" class="modal text-center" style="min-width: 480px;">
     <h2 class="text-2xl font-bold text-yellow-400 mb-2">🛒 ร้านค้าเวทมนตร์</h2>
     <p class="text-gray-300 mb-4 text-sm">ใช้ทองเพื่อซื้อไอเทม หรือเลือกขายไอเทมที่คุณไม่ต้องการแล้ว</p>
     
-    <!-- Buy Section -->
     <div class="flex flex-col gap-3">
         <div class="grid grid-cols-2 gap-2">
-            <button onclick="buyShopItem('statPt')" class="bg-gray-700 hover:bg-blue-600 border border-gray-500 rounded p-2 transition text-sm">🔵 1 Stat Point (100 G)</button>
-            <button onclick="buyShopItem('skillPt')" class="bg-gray-700 hover:bg-purple-600 border border-gray-500 rounded p-2 transition text-sm">🟣 1 Skill Point (500 G)</button>
+            <!-- Buy Stat Point -->
+            <div class="flex border border-gray-500 rounded overflow-hidden">
+                <input type="number" id="buy-stat-amt" value="1" min="1" class="w-16 bg-gray-800 text-center text-white outline-none border-r border-gray-600 text-sm py-2">
+                <button onclick="buyShopItem('statPt')" class="flex-1 bg-gray-700 hover:bg-blue-600 transition text-sm font-bold">🔵 ซื้อ Stat Pt (100G)</button>
+            </div>
+            <!-- Buy Skill Point -->
+            <div class="flex border border-gray-500 rounded overflow-hidden">
+                <input type="number" id="buy-skill-amt" value="1" min="1" class="w-16 bg-gray-800 text-center text-white outline-none border-r border-gray-600 text-sm py-2">
+                <button onclick="buyShopItem('skillPt')" class="flex-1 bg-gray-700 hover:bg-purple-600 transition text-sm font-bold">🟣 ซื้อ Skill Pt (500G)</button>
+            </div>
         </div>
         <div class="grid grid-cols-2 gap-2">
-            <button onclick="buyShopItem('gachaWep')" class="bg-gray-800 hover:bg-yellow-600 border border-yellow-700 rounded p-2 transition text-sm">⚔️ สุ่มอาวุธ (1000 G)</button>
-            <button onclick="buyShopItem('gachaArm')" class="bg-gray-800 hover:bg-yellow-600 border border-yellow-700 rounded p-2 transition text-sm">🛡️ สุ่มเกราะ (1000 G)</button>
+            <button onclick="buyShopItem('gachaWep')" class="bg-gray-800 hover:bg-yellow-600 border border-yellow-700 rounded p-2 transition text-sm font-bold">⚔️ สุ่มอาวุธ (1000 G)</button>
+            <button onclick="buyShopItem('gachaArm')" class="bg-gray-800 hover:bg-yellow-600 border border-yellow-700 rounded p-2 transition text-sm font-bold">🛡️ สุ่มเกราะ (1000 G)</button>
         </div>
-        <button onclick="buyShopItem('heal')" class="bg-gray-700 hover:bg-red-600 border border-gray-500 rounded p-2 transition text-sm">❤️ ฟื้นฟูเลือดเต็ม (50 G)</button>
+        <button onclick="buyShopItem('heal')" class="bg-gray-700 hover:bg-red-600 border border-gray-500 rounded p-2 transition text-sm font-bold">❤️ ฟื้นฟูเลือดเต็ม (50 G)</button>
     </div>
 
     <hr class="border-gray-600 my-4">
 
-    <!-- Sell Section -->
     <h3 class="text-lg font-bold text-orange-400 mb-2 text-left">💰 เลือกขายไอเทม</h3>
-    <div id="shop-sell-list" class="flex flex-col gap-2 max-h-[160px] overflow-y-auto bg-black/40 p-2 rounded border border-gray-700">
-        <!-- Rendered by JS -->
-    </div>
+    <div id="shop-sell-list" class="flex flex-col gap-2 max-h-[160px] overflow-y-auto bg-black/40 p-2 rounded border border-gray-700"></div>
     
     <button onclick="closeModals()" class="bg-red-800 hover:bg-red-700 rounded p-2 mt-4 w-full font-bold">ปิดหน้าต่าง</button>
 </div>
@@ -233,6 +237,10 @@
             <div class="flex justify-between items-center mb-2">
                 <span class="text-sm">❤️ Max HP: <span id="stat-hp">100</span></span>
                 <button onclick="upgradeStat('hp')" class="bg-blue-600 hover:bg-blue-500 px-3 rounded font-bold">+</button>
+            </div>
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-sm">💧 Max MP: <span id="stat-mp">60</span></span>
+                <button onclick="upgradeStat('mp')" class="bg-blue-600 hover:bg-blue-500 px-3 rounded font-bold">+</button>
             </div>
             <div class="flex justify-between items-center mb-2">
                 <span class="text-sm">⚔️ ATK: <span id="stat-atk">10</span></span>
@@ -274,9 +282,7 @@
     </div>
     <p class="text-gray-300 text-sm mb-4">สถิติการเคลียร์ดันเจี้ยนในแต่ละระดับ (จัดอันดับตามเวลาที่เร็วที่สุด)</p>
     
-    <div id="dash-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[50vh] overflow-y-auto pr-2">
-        <!-- Rendered via JS -->
-    </div>
+    <div id="dash-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[50vh] overflow-y-auto pr-2"></div>
 </div>
 
 <script>
@@ -335,11 +341,11 @@
 
     function logout() {
         saveGame();
-        location.reload(); // รีเฟรชหน้าเว็บกลับไปที่หน้า Login
+        location.reload(); 
     }
     
     // ==========================================
-    // DUNGEON GATES, DIFFICULTY & BOSS LOOT
+    // DUNGEON GATES & LOOT
     // ==========================================
     const GATE_RANKS = ['E', 'D', 'C', 'B', 'A', 'S'];
     const GATE_COLORS = ['#6b7280', '#9ca3af', '#d1d5db', '#34d399', '#60a5fa', '#a78bfa'];
@@ -468,10 +474,10 @@
             { name: 'ธารฟื้นฟู', icon: '💚', fx: 'heal', mp: 25, cdt: 14, mult: 0.3, desc: 'ฟื้นเลือด' },
             { name: 'อุกกาบาต', icon: '☄️', fx: 'meteor', mp: 50, cdt: 25, mult: 4, r: 150, range: 400, desc: 'อุกกาบาตตกที่เมาส์' }] },
         monarch: { name: 'จักรพรรดิเงา', icon: '🌑', color: 'text-purple-400', desc: 'สกัดเงาจากศพ เรียกมาสู้', hp: 95, atk: 11, def: 5, spd: 265, mp: 120, regen: 4, skills: [
-            { name: 'สกัดเงา', icon: '👁️', fx: 'extract', mp: 10, cdt: 1.5, desc: 'สกัดเงาจากศพใกล้ตัว' },
+            { name: 'สกัดเงา', icon: '👁️', fx: 'extract', mp: 10, cdt: 1.5, desc: 'สกัดเงาจากศพ (Lv.2+ สกัดหมู่วงกว้างขึ้น)' },
             { name: 'เรียกเงา', icon: '🌑', fx: 'summon', mp: 8, cdt: 4, desc: 'เรียกเงาที่แข็งแกร่งสุดออกมา' },
             { name: 'ก้าวเงา', icon: '💨', fx: 'dash', mp: 12, cdt: 5, mult: 1.5, desc: 'พุ่งผ่านเงาทำดาเมจ' },
-            { name: 'โดเมนราชันย์', icon: '👑', fx: 'domain', mp: 30, cdt: 25, desc: 'เงาแรงขึ้น+ฟื้นเลือดเงา' },
+            { name: 'โดเมนราชันย์', icon: '👑', fx: 'domain', mp: 0, cdt: 1, desc: 'เปิด/ปิดวงโดเมนบัฟเงา (ลดกิน MP ตามเลเวล)' },
             { name: 'กองทัพเงา', icon: '⚔️', fx: 'army', mp: 5, cdt: 30, desc: 'เรียกเงาทั้งหมดในคลัง' }] }
     };
 
@@ -485,7 +491,7 @@
     function applyClass(id) {
         const c = CLASSES[id];
         Object.assign(playerStats, { cls: id, maxHp: c.hp, hp: c.hp, baseAtk: c.atk, baseDef: c.def, baseSpeed: c.spd, maxMana: c.mp, mana: c.mp, manaRegen: c.regen });
-        playerStats.skills = c.skills.map((s, i) => Object.assign({ id: i + 1, level: i === 0 ? 1 : 0, cd: 0 }, s, { maxCd: s.cdt, desc: s.desc + ' • MP ' + s.mp }));
+        playerStats.skills = c.skills.map((s, i) => Object.assign({ id: i + 1, level: i === 0 ? 1 : 0, cd: 0 }, s, { maxCd: s.cdt, desc: s.desc + (s.mp > 0 ? ' • MP ' + s.mp : '') }));
         recolorPlayer(id); updateUI(); updateMana();
     }
     
@@ -518,24 +524,41 @@
         return { hp: Math.floor(sh.baseHp * (1 + sl * 0.1)), atk: Math.floor(sh.baseAtk * (1 + sl * 0.08)), speed: sh.speed * 1.15 };
     }
     function removeCorpse(c) { if (c.mesh) dynGroup.remove(c.mesh); corpses = corpses.filter(x => x !== c); }
+    
+    // Skill 1: Extract Shadow (Updated for AoE based on Level)
     function extractShadow(sk) {
-        let best = null, bd = 1e9;
-        corpses.forEach(c => { const d = Math.hypot(c.x - player.x, c.y - player.y); if (d < bd) { bd = d; best = c; } });
-        if (!best || bd > 180) { showMessage('ไม่มีศพใกล้ตัวให้สกัดเงา', '#ef4444'); return false; }
-        if (playerStats.shadows.length >= shadowCap()) { showMessage('คลังเงาเต็ม! กด V เพื่อลบเงา', '#ef4444'); return false; }
-        removeCorpse(best);
-        const chance = Math.min(0.95, 0.5 + sk.level * 0.1 - (best.isBoss ? 0.25 : 0));
-        if (Math.random() < chance) {
-            const names = { '🐺': 'หมาป่า', '🦇': 'ค้างคาว', '🕷️': 'แมงมุม', '🧟': 'ซอมบี้', '👻': 'ผี', '👹': 'ราชาอสูร' };
-            playerStats.shadows.push({ id: shadowSeq++, name: 'เงา' + (names[best.emoji] || 'อสูร'), emoji: best.emoji, isBoss: best.isBoss, radius: best.radius, baseHp: best.maxHp * 0.8, baseAtk: best.atk * 0.9, speed: best.speed });
-            spawnParticles(best.x, best.y, '#a78bfa', 40);
-            showMessage('🌑 สกัดเงาสำเร็จ! "ลุกขึ้นมา"', '#a78bfa');
-        } else {
-            spawnParticles(best.x, best.y, '#6b7280', 20);
-            showMessage('การสกัดล้มเหลว... เงาสลายไป', '#9ca3af');
+        let r = sk.level >= 2 ? 60 + sk.level * 30 : 60; // Lvl1=60, Lvl2=120, Lvl3=150, Lvl4=180, Lvl5=210
+        let targets = corpses.filter(c => Math.hypot(c.x - player.x, c.y - player.y) < r);
+        
+        if (sk.level < 2 && targets.length > 0) {
+            // Level 1: Only closest corpse
+            targets = [targets.reduce((a, b) => Math.hypot(a.x - player.x, a.y - player.y) < Math.hypot(b.x - player.x, b.y - player.y) ? a : b)];
         }
+        
+        if (targets.length === 0) { showMessage(`ไม่มีศพในระยะให้สกัดเงา`, '#ef4444'); return false; }
+        if (playerStats.shadows.length >= shadowCap()) { showMessage('คลังเงาเต็ม! กด V เพื่อลบเงา', '#ef4444'); return false; }
+        
+        let ext = 0;
+        targets.forEach(best => {
+            if (playerStats.shadows.length >= shadowCap()) return; // check again per corpse
+            removeCorpse(best);
+            const chance = Math.min(0.95, 0.5 + sk.level * 0.1 - (best.isBoss ? 0.25 : 0));
+            if (Math.random() < chance) {
+                const names = { '🐺': 'หมาป่า', '🦇': 'ค้างคาว', '🕷️': 'แมงมุม', '🧟': 'ซอมบี้', '👻': 'ผี', '👹': 'ราชาอสูร' };
+                playerStats.shadows.push({ id: shadowSeq++, name: 'เงา' + (names[best.emoji] || 'อสูร'), emoji: best.emoji, isBoss: best.isBoss, radius: best.radius, baseHp: best.maxHp * 0.8, baseAtk: best.atk * 0.9, speed: best.speed });
+                spawnParticles(best.x, best.y, '#a78bfa', 20);
+                ext++;
+            } else {
+                spawnParticles(best.x, best.y, '#6b7280', 10);
+            }
+        });
+        
+        if (ext > 0) showMessage(`🌑 สกัดเงาสำเร็จ ${ext} ตน! "ลุกขึ้นมา"`, '#a78bfa');
+        else showMessage('การสกัดล้มเหลว... เงาสลายไป', '#9ca3af');
+        
         return true;
     }
+
     function summonShadows(maxN, mpEach) {
         const alive = allies.filter(a => !a.isDead), out = new Set(alive.map(a => a.sh.id));
         const room = maxN - alive.length;
@@ -659,6 +682,17 @@
         cape.add(mk(new THREE.BoxGeometry(2.4, 3, 26), violet, 0, -35, 0));
         playerMesh.add(cape); playerMesh.userData.cape = cape;
         playerMesh.userData.legs = legs; playerMesh.userData.arms = arms;
+        
+        // Aura Ring for Monarch Domain
+        const domainGroup = new THREE.Group();
+        domainGroup.add(new THREE.Mesh(new THREE.RingGeometry(150, 160, 64), new THREE.MeshBasicMaterial({color: 0x8b5cf6, transparent: true, opacity: 0.6, side: THREE.DoubleSide})));
+        domainGroup.add(new THREE.Mesh(new THREE.CircleGeometry(150, 64), new THREE.MeshBasicMaterial({color: 0x7c3aed, transparent: true, opacity: 0.1, side: THREE.DoubleSide})));
+        domainGroup.rotation.x = -Math.PI / 2;
+        domainGroup.position.y = 2;
+        domainGroup.visible = false;
+        playerMesh.add(domainGroup);
+        playerMesh.userData.domainAura = domainGroup;
+
         const orb = mk(new THREE.SphereGeometry(5, 12, 10), M(0xa78bfa, { emissive: 0xa78bfa, emissiveIntensity: 1 }), 10, 28, -17); playerMesh.add(orb);
         playerMesh.userData.wisps = [0, 1, 2].map(() => {
             const w = new THREE.Mesh(new THREE.OctahedronGeometry(4), new THREE.MeshBasicMaterial({ color: 0x8b5cf6, transparent: true, opacity: 0.8 }));
@@ -828,10 +862,12 @@
         shield.visible = player.shieldEffect > 0;
         sword.rotation.y = player.attackTimer > 0 ? 0.9 - 1.8 * (1 - player.attackTimer / 0.3) : 0;
         torch.position.set(player.x, 90, player.y);
+        
         const pu = playerMesh.userData, moving = keys.w || keys.a || keys.s || keys.d || player.dashTimer > 0;
         const dts = Math.min(t - _lt, 0.1); _lt = t;
         walkAmp += ((moving ? 1 : 0) - walkAmp) * Math.min(1, dts * 10);
         walkPh += dts * 11 * walkAmp * (playerStats.baseSpeed / 260);
+        
         const sw = player.attackTimer > 0 ? 1 - player.attackTimer / 0.3 : 0, atk = Math.sin(sw * Math.PI);
         const ws = Math.sin(walkPh) * 0.9 * walkAmp, idle = Math.sin(t * 2) * 0.06;
         pu.legs[0].rotation.z = ws; pu.legs[1].rotation.z = -ws;
@@ -847,6 +883,17 @@
             w.position.set(Math.cos(a) * 26, 30 + Math.sin(t * 3 + i) * 6, Math.sin(a) * 26);
             w.rotation.y = t * 3;
         });
+
+        // Monarch Domain Aura Vis
+        if (pu.domainAura) {
+            pu.domainAura.visible = !!player.domainActive;
+            if (player.domainActive) {
+                pu.domainAura.rotation.z += dts * 1.5;
+                const domSk = playerStats.skills.find(s => s.fx === 'domain');
+                const scale = 1 + (domSk ? domSk.level * 0.15 : 0);
+                pu.domainAura.scale.set(scale, scale, 1);
+            }
+        }
 
         enemies.forEach(e => {
             if (e.isDead) { if (e.mesh) { dynGroup.remove(e.mesh); e.mesh = null; } return; }
@@ -975,6 +1022,7 @@
         constructor() {
             this.x = 0; this.y = 0; this.radius = 20; this.dirAngle = 0;
             this.attackTimer = 0; this.invulnTimer = 0; this.dashTimer = 0; this.dashCooldown = 0; this.shieldEffect = 0;
+            this.domainActive = false;
         }
 
         update(dt) {
@@ -984,7 +1032,23 @@
             if (this.invulnTimer > 0) this.invulnTimer -= dt;
             if (this.dashCooldown > 0) this.dashCooldown -= dt;
             if (this.shieldEffect > 0) this.shieldEffect -= dt;
-            playerStats.mana = Math.min(playerStats.maxMana, playerStats.mana + playerStats.manaRegen * dt);
+            
+            // Domain MP Drain System
+            if (this.domainActive) {
+                const domSk = playerStats.skills.find(s => s.fx === 'domain');
+                // เลเวล 1 กิน 17/s, เลเวล 5 กิน 5/s
+                const drainRate = Math.max(2, 20 - (domSk ? domSk.level * 3 : 0));
+                playerStats.mana -= drainRate * dt;
+                
+                if (playerStats.mana <= 0) {
+                    this.domainActive = false;
+                    playerStats.mana = 0;
+                    showMessage('มานาหมด! โดเมนถูกปิดตัวลง', '#ef4444');
+                }
+            } else {
+                // Regen mana normally if domain is off
+                playerStats.mana = Math.min(playerStats.maxMana, playerStats.mana + playerStats.manaRegen * dt);
+            }
             
             playerStats.skills.forEach(s => { if (s.cd > 0) s.cd -= dt; });
 
@@ -1072,10 +1136,14 @@
         useSkill(idx) {
             const sk = playerStats.skills[idx];
             if (!sk || sk.level === 0 || sk.cd > 0 || gameState.isPaused) return;
-            if (playerStats.mana < sk.mp) { showMessage('มานาไม่พอ!', '#60a5fa'); return; }
+            
+            // ยกเว้น domain ไม่ต้องเช็คตอนกด เพราะมันเป็นสลับเปิดปิดและกินเรื่อยๆ
+            if (playerStats.mana < sk.mp && sk.fx !== 'domain') { showMessage('มานาไม่พอ!', '#60a5fa'); return; }
+            
             const atk = getTotalAtk(), lv = sk.level;
             const inR = (x, y, r) => enemies.filter(e => !e.isDead && Math.hypot(e.x - x, e.y - y) < r + e.radius);
-            let cost = sk.mp;
+            let cost = sk.fx === 'domain' ? 0 : sk.mp;
+            
             switch (sk.fx) {
                 case 'cleave':
                     spawnParticles(this.x, this.y, '#60a5fa', 30);
@@ -1146,10 +1214,13 @@
                     cost = c; break;
                 }
                 case 'domain':
-                    gameState.allyBuff = 8 + lv * 2;
-                    allies.forEach(a => { if (!a.isDead) a.hp = Math.min(a.maxHp, a.hp + a.maxHp * 0.4); });
-                    spawnParticles(this.x, this.y, '#8b5cf6', 60);
-                    showMessage('👑 โดเมนจักรพรรดิ: เงาแข็งแกร่งขึ้น!', '#a78bfa');
+                    this.domainActive = !this.domainActive;
+                    if (this.domainActive) {
+                        spawnParticles(this.x, this.y, '#8b5cf6', 60);
+                        showMessage('👑 โดเมนราชันย์: เปิดทำงาน!', '#a78bfa');
+                    } else {
+                        showMessage('ปิดโดเมนราชันย์', '#9ca3af');
+                    }
                     break;
             }
             sk.cd = sk.maxCd;
@@ -1172,6 +1243,7 @@
         die() {
             showMessage(`คุณตายในดันเจี้ยน... ฟื้นคืนชีพที่เมืองศูนย์กลาง`, '#f87171');
             playerStats.hp = playerStats.maxHp;
+            this.domainActive = false; // ปิดโดเมนเมื่อตาย
             loadFloor(0);
             saveGame();
             updateUI();
@@ -1262,7 +1334,11 @@
                 const d = Math.hypot(e.x - this.x, e.y - this.y), dp = Math.hypot(e.x - player.x, e.y - player.y);
                 if (d < bd && dp < 520) { bd = d; tgt = e; }
             });
-            const buff = gameState.allyBuff > 0 ? 1.8 : 1;
+            
+            // Domain Buff System
+            const domSk = playerStats.skills.find(s => s.fx === 'domain');
+            const buff = (player.domainActive && domSk && domSk.level > 0) ? 1.3 + (domSk.level * 0.3) : 1;
+            
             let gx = player.x, gy = player.y, stop = 90;
             if (tgt) { gx = tgt.x; gy = tgt.y; stop = this.radius + tgt.radius; }
             const dx = gx - this.x, dy = gy - this.y, dist = Math.hypot(dx, dy) || 1;
@@ -1327,7 +1403,7 @@
             if (this.type === 'portal') {
                 loadFloor(gameState.floor + 1);
             } else if (this.type === 'shop') {
-                openShop(); // เรียกใช้ฟังก์ชันที่ปรับปรุงใหม่
+                openShop();
             } else if (this.type === 'chest') {
                 this.active = false;
                 openChest();
@@ -1693,25 +1769,43 @@
 
     function buyShopItem(type) {
         let cost = 0;
-        if(type === 'statPt') cost = 100;
-        if(type === 'skillPt') cost = 500;
-        if(type === 'gachaWep' || type === 'gachaArm') cost = 1000;
-        if(type === 'heal') cost = 50;
+        let amount = 1;
 
-        if (playerStats.gold >= cost) {
-            if (type === 'heal' && playerStats.hp === playerStats.maxHp) return;
+        if (type === 'statPt') {
+            cost = 100;
+            amount = parseInt(document.getElementById('buy-stat-amt').value) || 1;
+        }
+        if (type === 'skillPt') {
+            cost = 500;
+            amount = parseInt(document.getElementById('buy-skill-amt').value) || 1;
+        }
+        if (type === 'gachaWep' || type === 'gachaArm') cost = 1000;
+        if (type === 'heal') cost = 50;
+
+        if (amount < 1) amount = 1; // ป้องกันใส่ค่าติดลบหรือ 0
+
+        let totalCost = cost * amount;
+
+        if (playerStats.gold >= totalCost) {
+            if (type === 'heal' && playerStats.hp === playerStats.maxHp) {
+                showMessage("เลือดเต็มอยู่แล้ว!", '#ef4444');
+                return;
+            }
             
-            playerStats.gold -= cost;
+            playerStats.gold -= totalCost;
             if (type === 'heal') playerStats.hp = playerStats.maxHp;
-            if (type === 'statPt') playerStats.statPoints += 1;
-            if (type === 'skillPt') playerStats.skillPoints += 1;
+            if (type === 'statPt') playerStats.statPoints += amount;
+            if (type === 'skillPt') playerStats.skillPoints += amount;
             if (type === 'gachaWep') playerStats.inventory.push(generateRandomEquip('weapon'));
             if (type === 'gachaArm') playerStats.inventory.push(generateRandomEquip('armor'));
 
             saveGame();
-            updateUI(); spawnParticles(player.x, player.y, '#34d399', 15);
-            showMessage(type.includes('gacha') ? "สุ่มอุปกรณ์สำเร็จ! เปิดกระเป๋าเพื่อดู" : "ซื้อสำเร็จ!", '#34d399');
-            renderShopSellList(); // อัปเดตรายการขายเผื่อเพิ่งสุ่มของมาใหม่
+            updateUI(); 
+            spawnParticles(player.x, player.y, '#34d399', 15);
+            
+            let msg = type.includes('gacha') ? "สุ่มอุปกรณ์สำเร็จ! เปิดกระเป๋าเพื่อดู" : (type === 'heal' ? "ฟื้นฟูเลือดสำเร็จ!" : `ซื้อสำเร็จ ${amount} พอยต์!`);
+            showMessage(msg, '#34d399');
+            renderShopSellList(); 
         } else {
             showMessage("ทองไม่พอ!", '#ef4444');
         }
@@ -1727,6 +1821,7 @@
     function renderCharMenu() {
         document.getElementById('stat-pts').innerText = playerStats.statPoints;
         document.getElementById('stat-hp').innerText = playerStats.maxHp;
+        document.getElementById('stat-mp').innerText = playerStats.maxMana; // โชว์ค่า Max MP ปัจจุบัน
         document.getElementById('stat-atk').innerText = playerStats.baseAtk;
         document.getElementById('stat-def').innerText = playerStats.baseDef;
         document.getElementById('stat-spd').innerText = playerStats.baseSpeed;
@@ -1756,6 +1851,7 @@
         
         playerStats.statPoints -= cost;
         if (type === 'hp') { playerStats.maxHp += 15 * cost; playerStats.hp += 15 * cost; }
+        if (type === 'mp') { playerStats.maxMana += 10 * cost; playerStats.mana += 10 * cost; }
         if (type === 'atk') playerStats.baseAtk += 2 * cost;
         if (type === 'def') playerStats.baseDef += 1 * cost;
         if (type === 'spd') playerStats.baseSpeed += 5 * cost;
@@ -1785,7 +1881,6 @@
             allies.forEach(a => a.update(dt));
             if (gameState.dungeon) gameState.dungeon.time += dt;
             allies = allies.filter(a => !a.isDead);
-            if (gameState.allyBuff > 0) gameState.allyBuff -= dt;
             corpses.forEach(c => c.ttl -= dt);
             corpses.filter(c => c.ttl <= 0).forEach(removeCorpse);
             interactables.forEach(i => i.update(dt));
