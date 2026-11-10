@@ -78,6 +78,12 @@
         .skill-cd { position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.7); height: 0%; transition: height 0.1s; border-radius: 6px; }
         .skill-key { position: absolute; top: -10px; left: -10px; background: #3b82f6; width: 20px; height: 20px; border-radius: 50%; font-size: 12px; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 1px solid #fff; }
         .skill-lock { position: absolute; inset: 0; background: rgba(0,0,0,0.8); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #ef4444; }
+        
+        /* Scrollbar styles for modals */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
     </style>
 </head>
 <body>
@@ -177,24 +183,33 @@
     <div id="inv-container" class="inv-grid"></div>
 </div>
 
-<!-- Shop Modal -->
-<div id="shop-modal" class="modal text-center">
+<!-- Shop Modal (Updated for Manual Selling) -->
+<div id="shop-modal" class="modal text-center" style="min-width: 400px;">
     <h2 class="text-2xl font-bold text-yellow-400 mb-2">🛒 ร้านค้าเวทมนตร์</h2>
-    <p class="text-gray-300 mb-2">ใช้ทองเพื่อสร้างบิลด์ตัวละครในฝันของคุณ!</p>
-    <div class="flex flex-col gap-3 mt-4">
+    <p class="text-gray-300 mb-4 text-sm">ใช้ทองเพื่อซื้อไอเทม หรือเลือกขายไอเทมที่คุณไม่ต้องการแล้ว</p>
+    
+    <!-- Buy Section -->
+    <div class="flex flex-col gap-3">
         <div class="grid grid-cols-2 gap-2">
-            <button onclick="buyShopItem('statPt')" class="bg-gray-700 hover:bg-blue-600 border border-gray-500 rounded p-2 transition text-sm">🔵 ซื้อ 1 Stat Point (100 ทอง)</button>
-            <button onclick="buyShopItem('skillPt')" class="bg-gray-700 hover:bg-purple-600 border border-gray-500 rounded p-2 transition text-sm">🟣 ซื้อ 1 Skill Point (500 ทอง)</button>
+            <button onclick="buyShopItem('statPt')" class="bg-gray-700 hover:bg-blue-600 border border-gray-500 rounded p-2 transition text-sm">🔵 1 Stat Point (100 G)</button>
+            <button onclick="buyShopItem('skillPt')" class="bg-gray-700 hover:bg-purple-600 border border-gray-500 rounded p-2 transition text-sm">🟣 1 Skill Point (500 G)</button>
         </div>
         <div class="grid grid-cols-2 gap-2">
-            <button onclick="buyShopItem('gachaWep')" class="bg-gray-800 hover:bg-yellow-600 border border-yellow-700 rounded p-2 transition text-sm">⚔️ สุ่มอาวุธ (1000 ทอง)</button>
-            <button onclick="buyShopItem('gachaArm')" class="bg-gray-800 hover:bg-yellow-600 border border-yellow-700 rounded p-2 transition text-sm">🛡️ สุ่มเกราะ (1000 ทอง)</button>
+            <button onclick="buyShopItem('gachaWep')" class="bg-gray-800 hover:bg-yellow-600 border border-yellow-700 rounded p-2 transition text-sm">⚔️ สุ่มอาวุธ (1000 G)</button>
+            <button onclick="buyShopItem('gachaArm')" class="bg-gray-800 hover:bg-yellow-600 border border-yellow-700 rounded p-2 transition text-sm">🛡️ สุ่มเกราะ (1000 G)</button>
         </div>
-        <button onclick="buyShopItem('heal')" class="bg-gray-700 hover:bg-red-600 border border-gray-500 rounded p-2 transition text-sm">❤️ ฟื้นฟูเลือดเต็ม (50 ทอง)</button>
-        
-        <button onclick="sellAllCommon()" class="bg-gray-700 hover:bg-orange-600 border border-gray-500 rounded p-2 transition text-sm mt-2">💰 ขายของในกระเป๋าทั้งหมด</button>
-        <button onclick="closeModals()" class="bg-red-800 hover:bg-red-700 rounded p-2 mt-2">ปิดหน้าต่าง</button>
+        <button onclick="buyShopItem('heal')" class="bg-gray-700 hover:bg-red-600 border border-gray-500 rounded p-2 transition text-sm">❤️ ฟื้นฟูเลือดเต็ม (50 G)</button>
     </div>
+
+    <hr class="border-gray-600 my-4">
+
+    <!-- Sell Section -->
+    <h3 class="text-lg font-bold text-orange-400 mb-2 text-left">💰 เลือกขายไอเทม</h3>
+    <div id="shop-sell-list" class="flex flex-col gap-2 max-h-[160px] overflow-y-auto bg-black/40 p-2 rounded border border-gray-700">
+        <!-- Rendered by JS -->
+    </div>
+    
+    <button onclick="closeModals()" class="bg-red-800 hover:bg-red-700 rounded p-2 mt-4 w-full font-bold">ปิดหน้าต่าง</button>
 </div>
 
 <!-- Character Modal -->
@@ -303,7 +318,7 @@
         skills: []
     };
 
-    let corpses = [], allies = [], shadowSeq = 1;
+    let corpses = [], allies = [], potions = [], shadowSeq = 1;
     Object.assign(playerStats, { cls: 'knight', mana: 60, maxMana: 60, manaRegen: 3, shadows: [] });
     
     // ==========================================
@@ -431,19 +446,6 @@
         updateUI();
         setTimeout(() => bigPopup(`<div class="text-lg">👹 บอสพ่ายแพ้! ทอง +${gold} 💰</div><div class="text-sm text-gray-300">เวลาเคลียร์บอส ${fmtTime(d.time)}</div>` +
             (got ? `<div class="text-3xl mt-2 rank-${got.rank.name}">✨ ${got.name}</div><div class="text-sm">(ATK +${got.stat}) ${got.desc}</div>` : '<div class="text-sm text-gray-400 mt-1">ไม่ได้ดรอปอาวุธพิเศษ</div>'), 4500), 800);
-    }
-
-    function sellAllCommon() {
-        const eq = [playerStats.equipped.weapon && playerStats.equipped.weapon.id, playerStats.equipped.armor && playerStats.equipped.armor.id];
-        let total = 0, n = 0;
-        playerStats.inventory = playerStats.inventory.filter(it => {
-            if (it.unique || eq.includes(it.id)) return true;
-            total += Math.floor(it.stat * it.rank.mult * 5); n++; return false;
-        });
-        playerStats.gold += total;
-        saveGame();
-        showMessage(n ? `ขาย ${n} ชิ้น ได้รับ ${total} ทอง` : 'ไม่มีของให้ขาย', '#facc15');
-        updateUI(); renderInventory();
     }
 
     const CLASSES = {
@@ -882,6 +884,19 @@
             }
             c.mesh.children[1].position.y = 22 + Math.sin(t * 3 + c.x) * 4; c.mesh.children[1].rotation.y = t * 2;
         });
+        
+        potions.forEach(p => {
+            if (!p.mesh) {
+                const geom = new THREE.OctahedronGeometry(8);
+                const mat = M(0xf43f5e, { emissive: 0xe11d48, emissiveIntensity: 0.8 });
+                p.mesh = mk(geom, mat);
+                dynGroup.add(p.mesh);
+            }
+            p.mesh.position.set(p.x, 15 + Math.sin(t * 4 + p.x) * 5, p.y);
+            p.mesh.rotation.y = t * 2.5;
+            p.mesh.rotation.z = t * 1.5;
+        });
+
         allies.forEach(a => {
             if (a.isDead) return;
             if (!a.mesh) {
@@ -1217,6 +1232,15 @@
             
             playerStats.gold += this.goldReward;
             if (this.isBoss) bossLoot(this);
+            else if (Math.random() < 0.25) {
+                // ดรอปยารักษา (Potion) โอกาส 25%
+                potions.push({ 
+                    x: this.x, y: this.y, 
+                    heal: Math.max(15, Math.floor(playerStats.maxHp * 0.1)), 
+                    mesh: null 
+                });
+            }
+            
             spawnParticles(this.x, this.y, '#ef4444', this.isBoss ? 50 : 15);
             checkFloorClear();
             updateUI();
@@ -1303,9 +1327,7 @@
             if (this.type === 'portal') {
                 loadFloor(gameState.floor + 1);
             } else if (this.type === 'shop') {
-                gameState.isPaused = true;
-                gameState.shopOpen = true;
-                document.getElementById('shop-modal').style.display = 'block';
+                openShop(); // เรียกใช้ฟังก์ชันที่ปรับปรุงใหม่
             } else if (this.type === 'chest') {
                 this.active = false;
                 openChest();
@@ -1344,6 +1366,10 @@
         gameState.floor = fNum;
         player.x = 0; player.y = 0;
         enemies = []; interactables = []; decorations = [];
+        
+        // ล้างยาฮีลเลือด
+        potions.forEach(p => { if (p.mesh) dynGroup.remove(p.mesh); });
+        potions = [];
         
         for(let i = 0; i < 35; i++) {
             let dx = (Math.random() - 0.5) * 1600; let dy = (Math.random() - 0.5) * 1600;
@@ -1535,8 +1561,8 @@
 
     function toggleInventory() {
         const modal = document.getElementById('inventory-modal');
-        if (modal.style.display === 'block') { modal.style.display = 'none'; if(!gameState.shopOpen) gameState.isPaused = false; } 
-        else { if(!gameState.shopOpen) closeModals(); modal.style.display = 'block'; gameState.isPaused = true; renderInventory(); }
+        if (modal.style.display === 'block') { modal.style.display = 'none'; gameState.isPaused = false; } 
+        else { closeModals(); modal.style.display = 'block'; gameState.isPaused = true; renderInventory(); }
     }
     
     function toggleCharMenu() {
@@ -1597,29 +1623,72 @@
             if (item) {
                 const isEquipped = (playerStats.equipped.weapon?.id === item.id) || (playerStats.equipped.armor?.id === item.id);
                 slot.innerHTML = `<div class="icon rank-${item.rank.name}">${item.type === 'weapon' ? '⚔️' : '🛡️'}</div>${isEquipped ? '<div class="equipped-indicator">E</div>' : ''}`;
-                slot.title = `${item.name}\n${item.type === 'weapon' ? 'ATK' : 'DEF'} +${item.stat}\n(คลิกขวาเพื่อ${gameState.shopOpen ? `ขาย ได้ ${Math.floor(item.stat * item.rank.mult * 5)} ทอง` : 'สวมใส่'})${item.desc ? '\n★ ' + item.desc : ''}`;
-                slot.addEventListener('contextmenu', (e) => { e.preventDefault(); if (gameState.shopOpen) sellItem(item, i); else equipItem(item); });
+                slot.title = `${item.name}\n${item.type === 'weapon' ? 'ATK' : 'DEF'} +${item.stat}${item.desc ? '\n★ ' + item.desc : ''}`;
+                slot.addEventListener('contextmenu', (e) => { e.preventDefault(); equipItem(item); });
             }
             container.appendChild(slot);
         }
     }
     
-    function sellItem(item, index) {
-        let isEquipped = (playerStats.equipped.weapon?.id === item.id) || (playerStats.equipped.armor?.id === item.id);
-        if (isEquipped) { showMessage("ไม่สามารถขายไอเทมที่สวมใส่อยู่ได้", '#ef4444'); return; }
-        let sellPrice = Math.floor(item.stat * item.rank.mult * 5);
-        playerStats.gold += sellPrice; playerStats.inventory.splice(index, 1);
-        spawnParticles(player.x, player.y, '#facc15', 10);
-        showMessage(`ขาย ${item.name} ได้รับ ${sellPrice} ทอง`, '#facc15');
-        saveGame();
-        updateUI(); renderInventory();
-    }
-
     function equipItem(item) {
         if (item.type === 'weapon') playerStats.equipped.weapon = (playerStats.equipped.weapon?.id === item.id) ? null : item;
         else if (item.type === 'armor') playerStats.equipped.armor = (playerStats.equipped.armor?.id === item.id) ? null : item;
         saveGame();
         updateUI(); renderInventory();
+    }
+
+    // --- Shop System ---
+    function openShop() {
+        gameState.isPaused = true;
+        gameState.shopOpen = true;
+        document.getElementById('shop-modal').style.display = 'block';
+        renderShopSellList();
+    }
+
+    function renderShopSellList() {
+        const container = document.getElementById('shop-sell-list');
+        const eq = [playerStats.equipped.weapon?.id, playerStats.equipped.armor?.id];
+        
+        // กรองเอาไอเทมที่ไม่ได้สวมใส่ออกมา
+        let sellableItems = playerStats.inventory.filter(it => !eq.includes(it.id));
+        
+        if (sellableItems.length === 0) {
+            container.innerHTML = '<div class="text-sm text-gray-500 py-4 text-center">ไม่มีไอเทมที่สามารถขายได้</div>';
+            return;
+        }
+
+        container.innerHTML = sellableItems.map(it => {
+            let price = Math.floor(it.stat * it.rank.mult * 5);
+            return `
+            <div class="flex justify-between items-center bg-gray-800 p-2 rounded">
+                <div class="text-left max-w-[200px]">
+                    <div class="font-bold text-sm truncate rank-${it.rank.name}">${it.type === 'weapon' ? '⚔️' : '🛡️'} ${it.name}</div>
+                    <div class="text-xs text-gray-400">สเตตัส +${it.stat}</div>
+                </div>
+                <button onclick="sellSpecificItem('${it.id}')" class="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-1 px-3 rounded text-sm whitespace-nowrap transition transform hover:scale-105">
+                    ขาย ${price} G
+                </button>
+            </div>`;
+        }).join('');
+    }
+
+    function sellSpecificItem(itemId) {
+        // ค้นหา Index ของไอเทม
+        let idx = playerStats.inventory.findIndex(it => it.id.toString() === itemId.toString());
+        if (idx !== -1) {
+            let item = playerStats.inventory[idx];
+            let price = Math.floor(item.stat * item.rank.mult * 5);
+            
+            playerStats.gold += price;
+            playerStats.inventory.splice(idx, 1);
+            
+            spawnParticles(player.x, player.y, '#facc15', 10);
+            showMessage(`ขาย ${item.name} ได้รับ ${price} ทอง`, '#facc15');
+            
+            saveGame();
+            updateUI();
+            renderShopSellList(); // รีเฟรชรายการที่ขายได้
+        }
     }
 
     function buyShopItem(type) {
@@ -1642,6 +1711,7 @@
             saveGame();
             updateUI(); spawnParticles(player.x, player.y, '#34d399', 15);
             showMessage(type.includes('gacha') ? "สุ่มอุปกรณ์สำเร็จ! เปิดกระเป๋าเพื่อดู" : "ซื้อสำเร็จ!", '#34d399');
+            renderShopSellList(); // อัปเดตรายการขายเผื่อเพิ่งสุ่มของมาใหม่
         } else {
             showMessage("ทองไม่พอ!", '#ef4444');
         }
@@ -1722,6 +1792,19 @@
             updateParticles(dt);
             updateSkillCooldowns();
             
+            // เช็คการเก็บ Potion
+            for (let i = potions.length - 1; i >= 0; i--) {
+                let p = potions[i];
+                if (Math.hypot(player.x - p.x, player.y - p.y) < player.radius + 20) {
+                    playerStats.hp = Math.min(playerStats.maxHp, playerStats.hp + p.heal);
+                    spawnParticles(p.x, p.y, '#f43f5e', 20);
+                    showFloatingText(`+${p.heal}`, p.x, p.y - 30, '#f43f5e');
+                    updateUI();
+                    if (p.mesh) dynGroup.remove(p.mesh);
+                    potions.splice(i, 1);
+                }
+            }
+
             camera.x += (player.x - camera.x) * 5 * dt;
             camera.y += (player.y - camera.y) * 5 * dt;
 
@@ -1786,5 +1869,3 @@
 </body>
 </html>
 ```eof
-
-โค้ดชุดใหม่ด้านบนทำมาให้จบครบในตัวเดียวเลยครับ เอาโค้ดใหม่ทั้งหมดไปวางทับในไฟล์ได้เลย ไม่ต้องแยกไฟล์ `leaderboard.html` แล้วครับ!
