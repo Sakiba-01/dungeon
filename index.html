@@ -81,6 +81,7 @@
         
         .skill-lv { position: absolute; bottom: -9px; right: -7px; background: #7c3aed; color: #fff; font-size: 10px; font-weight: bold; padding: 0 5px; border-radius: 9px; border: 1px solid #fff; line-height: 15px; z-index: 11; white-space: nowrap; }
         .inv-slot img { width: 54px; height: 54px; object-fit: contain; pointer-events: none; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.6)); }
+        .slot-cls { position: absolute; top: 1px; right: 3px; font-size: 11px; pointer-events: none; }
         .slot-rank { position: absolute; bottom: 1px; left: 4px; font-size: 10px; font-weight: bold; text-shadow: 0 1px 2px #000; pointer-events: none; }
         @keyframes uniqGlow { 0%, 100% { box-shadow: 0 0 5px var(--c), inset 0 0 8px var(--c); } 50% { box-shadow: 0 0 15px var(--c), inset 0 0 14px var(--c); } }
         .inv-slot.uniq { animation: uniqGlow 2s ease-in-out infinite; }
@@ -112,7 +113,7 @@
         </div>
         <div class="mb-4">
             <input type="password" id="player-pin" placeholder="รหัสผ่าน 6 หลัก (PIN)" maxlength="6" pattern="\d{6}" class="px-4 py-3 rounded-lg text-black font-bold text-lg text-center w-full tracking-[0.5em] focus:outline-none focus:ring-4 focus:ring-blue-500">
-            <p class="text-xs text-gray-400 mt-2 text-left">* หากเป็นชื่อใหม่ ระบบจะสร้างบัญชีให้ทันที<br>* บัญชีเดิม จะสามารถเล่นต่อจากที่เซฟไว้ได้</p>
+            <p class="text-xs text-gray-400 mt-2 text-left">* หากเป็นชื่อใหม่ ระบบจะสร้างบัญชีให้ทันที (ชื่อซ้ำไม่ได้ ไม่สนตัวพิมพ์เล็ก/ใหญ่)<br>* บัญชีเดิม จะสามารถเล่นต่อจากที่เซฟไว้ได้</p>
         </div>
     </div>
     
@@ -124,7 +125,7 @@
     </button>
 </div>
 
-<!-- Class Select Screen -->
+<!-- Class Select Screen (shown once, right after the first login) -->
 <div id='class-screen' style='display:none' class='absolute inset-0 bg-gray-900/95 z-[100] flex-col items-center justify-start md:justify-center py-4 overflow-y-auto text-white backdrop-blur-sm pointer-events-auto transition-opacity duration-500'>
     <div class='text-4xl font-extrabold text-yellow-300 mb-2 text-center'>เลือกอาชีพของคุณ</div>
     <div class='text-gray-400 mb-6 text-sm text-center px-4'>เลือกได้ฟรีครั้งนี้ครั้งเดียว — หลังจากนี้ต้องเสียทองเพื่อเปลี่ยนอาชีพที่ร้านค้า</div>
@@ -154,6 +155,7 @@
     
     <div class="absolute top-4 right-4 flex flex-col items-end gap-2 pointer-events-auto">
         <div class="flex gap-2">
+            <button id='snd-btn' onclick='toggleSound()' class='bg-gray-800/80 hover:bg-gray-700 border border-gray-500 px-3 py-1 rounded text-sm font-bold text-white transition'>🔊</button>
             <button onclick="showDashboard()" class="bg-blue-800/80 hover:bg-blue-600 text-white font-bold py-2 px-3 rounded border border-blue-500 transition shadow-lg flex items-center gap-2 text-sm">
                 🏆 ดูอันดับ
             </button>
@@ -187,7 +189,7 @@
 <div id="inventory-modal" class="modal">
     <div class="flex justify-between items-center mb-4 border-b border-gray-600 pb-2">
         <h2 class="text-xl font-bold">🎒 กระเป๋าสัมภาระ</h2>
-        <button onclick="toggleInventory()" class="text-gray-400 hover:text-white font-bold text-xl">X</button>
+        <button onclick="toggleInventory()" class="text-gray-400 hover:text-white font-bold">X</button>
     </div>
     <div class="text-sm text-gray-400 mb-2">คลิกขวาที่ไอเทมเพื่อสวมใส่/ถอดออก</div>
     <div class="grid grid-cols-2 gap-4 mb-4 bg-black/40 p-2 rounded">
@@ -198,12 +200,9 @@
 </div>
 
 <!-- Shop Modal -->
-<div id="shop-modal" class="modal" style="min-width: 480px;">
-    <div class="flex justify-between items-center mb-4 border-b border-gray-600 pb-2">
-        <h2 class="text-2xl font-bold text-yellow-400">🛒 ร้านค้าเวทมนตร์</h2>
-        <button onclick="closeModals()" class="text-gray-400 hover:text-white font-bold text-xl">X</button>
-    </div>
-    <p class="text-gray-300 mb-4 text-sm text-center">ใช้ทองเพื่อซื้อไอเทม หรือเลือกขายไอเทมที่คุณไม่ต้องการแล้ว</p>
+<div id="shop-modal" class="modal text-center" style="min-width: 480px;">
+    <h2 class="text-2xl font-bold text-yellow-400 mb-2">🛒 ร้านค้าเวทมนตร์</h2>
+    <p class="text-gray-300 mb-4 text-sm">ใช้ทองเพื่อซื้อไอเทม หรือเลือกขายไอเทมที่คุณไม่ต้องการแล้ว</p>
     
     <div class="flex flex-col gap-3">
         <div class="grid grid-cols-2 gap-2">
@@ -222,7 +221,7 @@
             <button onclick="buyShopItem('gachaWep')" class="bg-gray-800 hover:bg-yellow-600 border border-yellow-700 rounded p-2 transition text-sm font-bold">⚔️ สุ่มอาวุธ (1000 G)</button>
             <button onclick="buyShopItem('gachaArm')" class="bg-gray-800 hover:bg-yellow-600 border border-yellow-700 rounded p-2 transition text-sm font-bold">🛡️ สุ่มเกราะ (1000 G)</button>
         </div>
-        <button onclick="buyShopItem('heal')" class="bg-gray-700 hover:bg-red-600 border border-gray-500 rounded p-2 transition text-sm font-bold w-full">❤️ ฟื้นฟูเลือดเต็ม (50 G)</button>
+        <button onclick="buyShopItem('heal')" class="bg-gray-700 hover:bg-red-600 border border-gray-500 rounded p-2 transition text-sm font-bold">❤️ ฟื้นฟูเลือดเต็ม (50 G)</button>
     </div>
 
     <hr class="border-gray-600 my-4">
@@ -240,7 +239,7 @@
 <div id="char-modal" class="modal" style="min-width: 450px;">
     <div class="flex justify-between items-center mb-4 border-b border-gray-600 pb-2">
         <h2 class="text-xl font-bold">👤 สเตตัสและสกิล</h2>
-        <button onclick="toggleCharMenu()" class="text-gray-400 hover:text-white font-bold text-xl">X</button>
+        <button onclick="toggleCharMenu()" class="text-gray-400 hover:text-white font-bold">X</button>
     </div>
     
     <div class="flex gap-2 mb-3 items-center bg-gray-800 p-2 rounded">
@@ -288,7 +287,7 @@
 <div id="shadow-modal" class="modal" style="min-width: 420px;">
     <div class="flex justify-between items-center mb-4 border-b border-gray-600 pb-2">
         <h2 id="shadow-title" class="text-xl font-bold text-purple-300">🌑 คลังเงา</h2>
-        <button onclick="toggleShadowMenu()" class="text-gray-400 hover:text-white font-bold text-xl">X</button>
+        <button onclick="toggleShadowMenu()" class="text-gray-400 hover:text-white font-bold">X</button>
     </div>
     <div class="text-xs text-gray-400 mb-2">เงาที่ตายในสนามจะไม่หายจากคลัง (แลกด้วยมานา) ลบได้เฉพาะที่นี่</div>
     <div id="shadow-list" class="flex flex-col gap-2 overflow-y-auto max-h-[300px] pr-1"></div>
@@ -306,75 +305,6 @@
 </div>
 
 <script>
-    // ==========================================
-    // AUDIO SYSTEM (Web Audio API) - No External Files Needed
-    // ==========================================
-    let audioCtx = null;
-    function initAudio() {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-    }
-    
-    function playSFX(type) {
-        if (!audioCtx || audioCtx.state === 'suspended') return;
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        const t = audioCtx.currentTime;
-        
-        if (type === 'attack') {
-            osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(250, t);
-            osc.frequency.exponentialRampToValueAtTime(80, t + 0.1);
-            gain.gain.setValueAtTime(0.2, t);
-            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
-            osc.start(t); osc.stop(t + 0.1);
-        } else if (type === 'mage_attack') {
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(600, t);
-            osc.frequency.exponentialRampToValueAtTime(200, t + 0.15);
-            gain.gain.setValueAtTime(0.2, t);
-            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
-            osc.start(t); osc.stop(t + 0.15);
-        } else if (type === 'hit') {
-            osc.type = 'square';
-            osc.frequency.setValueAtTime(150, t);
-            osc.frequency.exponentialRampToValueAtTime(40, t + 0.1);
-            gain.gain.setValueAtTime(0.3, t);
-            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
-            osc.start(t); osc.stop(t + 0.1);
-        } else if (type === 'monster_die') {
-            osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(120, t);
-            osc.frequency.exponentialRampToValueAtTime(20, t + 0.3);
-            gain.gain.setValueAtTime(0.4, t);
-            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
-            osc.start(t); osc.stop(t + 0.3);
-        } else if (type === 'loot') {
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(1200, t);
-            osc.frequency.setValueAtTime(1800, t + 0.05);
-            gain.gain.setValueAtTime(0.2, t);
-            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
-            osc.start(t); osc.stop(t + 0.3);
-        } else if (type === 'skill') {
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(400, t);
-            osc.frequency.linearRampToValueAtTime(1000, t + 0.2);
-            gain.gain.setValueAtTime(0.2, t);
-            gain.gain.linearRampToValueAtTime(0.01, t + 0.4);
-            osc.start(t); osc.stop(t + 0.4);
-        } else if (type === 'dash') {
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(150, t);
-            osc.frequency.exponentialRampToValueAtTime(80, t + 0.2);
-            gain.gain.setValueAtTime(0.2, t);
-            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.2);
-            osc.start(t); osc.stop(t + 0.2);
-        }
-    }
-
     // ==========================================
     // DATA & CONSTANTS
     // ==========================================
@@ -439,11 +369,11 @@
     const GATE_RANKS = ['E', 'D', 'C', 'B', 'A', 'S'];
     const GATE_COLORS = ['#6b7280', '#9ca3af', '#d1d5db', '#34d399', '#60a5fa', '#a78bfa'];
     const SPECIALS = [
-        { name: 'ดาบสังหารมังกร', special: 'execute', desc: 'ดาเมจ x2 ใส่ศัตรูที่เหลือเลือดต่ำกว่า 30%', cls: ['knight', 'tank', 'monarch'] },
-        { name: 'เคียวดูดวิญญาณ', special: 'lifesteal', desc: 'ดูดเลือด 6% ของดาเมจ', cls: ['knight', 'monarch'] },
-        { name: 'หอกอัสนี', special: 'reach', desc: 'ระยะโจมตี +45', cls: ['knight', 'tank', 'monarch'] },
-        { name: 'คทาอาร์เคน', special: 'manasteal', desc: 'ฟื้นมานา 3 ต่อการโจมตี', cls: ['mage'] },
-        { name: 'ดาบแห่งชะตา', special: 'crit', desc: 'คริติคอล 25% ดาเมจ x2.5', cls: ['knight', 'tank', 'monarch'] }
+        { name: 'ดาบสังหารมังกร', special: 'execute', desc: 'ดาเมจ x2 ใส่ศัตรูที่เหลือเลือดต่ำกว่า 30%' },
+        { name: 'เคียวดูดวิญญาณ', special: 'lifesteal', desc: 'ดูดเลือด 6% ของดาเมจ' },
+        { name: 'หอกอัสนี', special: 'reach', desc: 'ระยะโจมตี +45' },
+        { name: 'คทาอาร์เคน', special: 'manasteal', desc: 'ฟื้นมานา 3 ต่อการโจมตี' },
+        { name: 'ดาบแห่งชะตา', special: 'crit', desc: 'คริติคอล 25% ดาเมจ x2.5' }
     ];
 
     function fmtTime(s) { 
@@ -506,14 +436,15 @@
     function bossDropChance(d) { return Math.min(0.9, 0.5 + d.tier * 0.05); }
 
     function makeSpecialWeapon(fromChest) {
+        const w = makeSpecialWeaponBase(fromChest);
+        if (hasShield(w)) w.defBonus = Math.floor(w.stat * 0.4);
+        return w;
+    }
+    function makeSpecialWeaponBase(fromChest) {
         const d = gameState.dungeon || { tier: 0, time: 0, floors: 3 };
         const rank = Math.random() < 0.2 ? RANKS[6] : RANKS[5];
-        
-        let available = SPECIALS.filter(s => s.cls.includes(playerStats.cls));
-        if(available.length === 0) available = SPECIALS; // Fallback
-        
-        const def = available[Math.floor(Math.random() * available.length)];
-        return { id: Date.now() + Math.random(), name: `${def.name} [${rank.name}]`, type: 'weapon', rank, special: def.special, desc: def.desc, unique: true,
+        const pool = SPECIALS.filter(s => (SPEC_CLS[s.special] || []).includes(playerStats.cls)), def = pool[Math.floor(Math.random() * pool.length)];
+        return { id: Date.now() + Math.random(), name: `${def.name} [${rank.name}]`, type: 'weapon', rank, special: def.special, kind: def.kind, cls: SPEC_CLS[def.special], desc: def.desc, unique: true,
             stat: Math.floor(6 * rank.mult * (1 + d.tier * 0.3)) + Math.floor(Math.random() * 6) };
     }
 
@@ -524,6 +455,8 @@
         else if (w.special === 'execute' && e.hp < e.maxHp * 0.3) { dmg *= 2; spawnParticles(e.x, e.y, '#ef4444', 8); }
         else if (w.special === 'lifesteal') { playerStats.hp = Math.min(playerStats.maxHp, playerStats.hp + Math.max(1, Math.floor(dmg * 0.06))); updateUI(); }
         else if (w.special === 'manasteal') playerStats.mana = Math.min(playerStats.maxMana, playerStats.mana + 3);
+        else if (w.special === 'quake' && Math.random() < 0.2) { e.frozen = 1; spawnParticles(e.x, e.y, '#f97316', 10); }
+        else if (w.special === 'chill' && Math.random() < 0.15) { e.frozen = 1.5; spawnParticles(e.x, e.y, '#7dd3fc', 10); }
         return dmg;
     }
 
@@ -543,9 +476,6 @@
         if (got) playerStats.inventory.push(got);
         const gotA = Math.random() < 0.3 ? makeSpecialArmor() : null;
         if (gotA) playerStats.inventory.push(gotA);
-        
-        playSFX('loot');
-        
         if (got) setTimeout(() => showLootReveal(got), 900);
         if (gotA) setTimeout(() => showLootReveal(gotA), 1600);
         saveGame();
@@ -599,7 +529,7 @@
     
     function renderClassCards() {
         document.getElementById('class-cards').innerHTML = Object.entries(CLASSES).map(([id, c]) =>
-            `<button onclick="selectClass('${id}')" class="w-40 p-3 rounded-xl border-2 text-left transition ${playerStats.cls === id ? 'border-yellow-400 bg-white/15 scale-105' : 'border-gray-600 bg-black/40 hover:border-gray-300'}"><div class="text-3xl">${c.icon}</div><div class="font-bold ${c.color}">${c.name}</div><div class="text-xs text-gray-300">${c.desc}</div><div class="text-xs text-gray-400 mt-1">❤️${c.hp} ⚔️${c.atk} 🛡️${c.def} 💧${c.mp}</div><div class="text-base mt-1">${c.skills.map(s => s.icon).join(' ')}</div></button>`).join('');
+            `<button onclick="selectClass('${id}')" class="w-40 p-3 rounded-xl border-2 text-left transition ${playerStats.cls === id ? 'border-yellow-400 bg-white/15 scale-105' : 'border-gray-600 bg-black/40 hover:border-gray-300'}"><div class="text-3xl">${c.icon}</div><div class="font-bold ${c.color}">${c.name}</div><div class="text-xs text-gray-300">${c.desc}</div><div class="text-xs text-gray-400 mt-1">❤️${c.hp} ⚔️${c.atk} 🛡️${c.def} 💧${c.mp}</div><div class="text-base mt-1">${c.skills.map(s => s.icon).join(' ')}</div><div class="text-xs text-amber-300 mt-1">${gearText(id)}</div></button>`).join('');
     }
     
     function selectClass(id) { applyClass(id); renderClassCards(); }
@@ -627,11 +557,13 @@
     }
     function removeCorpse(c) { if (c.mesh) dynGroup.remove(c.mesh); corpses = corpses.filter(x => x !== c); }
     
+    // Skill 1: Extract Shadow (Updated for AoE based on Level)
     function extractShadow(sk) {
         let r = sk.level >= 2 ? 60 + sk.level * 30 : 60; // Lvl1=60, Lvl2=120, Lvl3=150, Lvl4=180, Lvl5=210
         let targets = corpses.filter(c => Math.hypot(c.x - player.x, c.y - player.y) < r);
         
         if (sk.level < 2 && targets.length > 0) {
+            // Level 1: Only closest corpse
             targets = [targets.reduce((a, b) => Math.hypot(a.x - player.x, a.y - player.y) < Math.hypot(b.x - player.x, b.y - player.y) ? a : b)];
         }
         
@@ -681,20 +613,14 @@
         if (modal.style.display === 'block') { modal.style.display = 'none'; gameState.isPaused = false; }
         else { closeModals(); modal.style.display = 'block'; gameState.isPaused = true; renderShadowMenu(); }
     }
-    
     function renderShadowMenu() {
         document.getElementById('shadow-title').innerText = `🌑 คลังเงา (${playerStats.shadows.length}/${shadowCap()})`;
         const out = new Set(allies.filter(a => !a.isDead).map(a => a.sh.id));
-        
-        // เรียงเงาจากมากไปน้อย (คิดพลังจาก HP + ATK)
-        const sortedShadows = [...playerStats.shadows].sort((a, b) => (b.baseHp + b.baseAtk) - (a.baseHp + a.baseAtk));
-        
-        document.getElementById('shadow-list').innerHTML = sortedShadows.length ? sortedShadows.map(s => {
+        document.getElementById('shadow-list').innerHTML = playerStats.shadows.length ? playerStats.shadows.map(s => {
             const st = shadowStats(s);
             return `<div class="flex justify-between items-center bg-gray-800 p-2 rounded"><div class="text-sm"><span class="text-xl">${s.emoji}</span> <span class="font-bold text-purple-300">${s.name}</span>${out.has(s.id) ? ' <span class="text-green-400 text-xs">(อยู่ในสนาม)</span>' : ''}<span class="text-gray-400 block text-xs">❤️ ${st.hp} | ⚔️ ${st.atk}</span></div><button onclick="deleteShadow(${s.id})" class="bg-red-700 hover:bg-red-600 px-2 py-1 rounded text-xs font-bold">ลบ</button></div>`;
         }).join('') : '<div class="text-gray-400 text-sm">ยังไม่มีเงา — ฆ่ามอนสเตอร์แล้วใช้ [1] สกัดเงาที่ศพ</div>';
     }
-    
     function deleteShadow(id) {
         playerStats.shadows = playerStats.shadows.filter(s => s.id !== id);
         allies.forEach(a => { if (a.sh.id === id) { a.isDead = true; if (a.mesh) { dynGroup.remove(a.mesh); a.mesh = null; } } });
@@ -703,7 +629,7 @@
     }
 
     function getTotalAtk() { return playerStats.baseAtk + (playerStats.equipped.weapon ? playerStats.equipped.weapon.stat : 0); }
-    function getTotalDef() { return playerStats.baseDef + (playerStats.equipped.armor ? playerStats.equipped.armor.stat : 0); }
+    function getTotalDef() { return playerStats.baseDef + (playerStats.equipped.armor ? playerStats.equipped.armor.stat : 0) + ((playerStats.equipped.weapon && playerStats.equipped.weapon.defBonus) || 0); }
 
     // ==========================================
     // CANVAS SETUP & THREE.JS SCENE
@@ -821,41 +747,47 @@
     // ==========================================
     // MODELS v2: equipment, loot reveal, bosses, gates, chests
     // ==========================================
-    const SPEC_COL = { execute: 0xef4444, lifesteal: 0x4ade80, reach: 0x7dd3fc, manasteal: 0x22d3ee, crit: 0xfbbf24 };
-    const STYLE_COL = { dragon: 0xef4444, shadow: 0x8b5cf6, thunder: 0x38bdf8 };
+    const SPEC_COL = { execute: 0xef4444, lifesteal: 0x4ade80, reach: 0x7dd3fc, manasteal: 0x22d3ee, crit: 0xfbbf24, bulwark: 0x60a5fa, quake: 0xf97316, chill: 0x7dd3fc };
+    const STYLE_COL = { dragon: 0xef4444, shadow: 0x8b5cf6, thunder: 0x38bdf8, fortress: 0xf59e0b, arcane: 0x818cf8 };
     const WK = ['sword', 'axe', 'mace', 'dagger'], AK = ['plate', 'leather', 'robe'];
-    const KIND_NAME = { sword: 'ดาบ', axe: 'ขวาน', mace: 'กระบอง', dagger: 'กริชเวท/คทา', plate: 'เกราะเหล็ก', leather: 'เกราะหนัง', robe: 'ชุดคลุมเวท' };
+    const KIND_NAME = { sword: 'ดาบ', axe: 'ขวาน', mace: 'กระบอง', dagger: 'กริช', plate: 'เกราะเหล็ก', leather: 'เกราะหนัง', robe: 'ชุดคลุมเวท', spear: 'หอก', swordshield: 'ดาบและโล่', hammershield: 'ค้อนและโล่', staff: 'คทา', wand: 'ไม้กายสิทธิ์', heavy: 'เกราะหนักป้อมปราการ' };
     const RANK_ADJ = ['ขึ้นสนิม', 'ธรรมดา', 'ชั้นดี', 'เงินวิเศษ', 'มิธริล', 'ออริคัลคัม', 'เทพ'];
     const SPECIAL_ARMORS = [
         { name: 'เกราะเกล็ดมังกร', style: 'dragon', desc: 'ปีกและหางมังกร DEF สูงพิเศษ' },
         { name: 'ชุดราชันย์เงา', style: 'shadow', desc: 'เปลวเงาลอยรอบไหล่ DEF สูงพิเศษ' },
         { name: 'เกราะจักรพรรดิอัสนี', style: 'thunder', desc: 'ปีกทองและสายฟ้า DEF สูงพิเศษ' }
     ];
+    // ---------- Class-specific gear ----------
+    const CLASS_GEAR = {
+        knight: { cls: ['knight', 'monarch'], wk: ['sword', 'axe', 'spear'], ak: ['plate'] },
+        tank: { cls: ['tank'], wk: ['swordshield', 'hammershield'], ak: ['heavy'] },
+        mage: { cls: ['mage'], wk: ['staff', 'wand'], ak: ['robe'] }
+    };
+    CLASS_GEAR.monarch = CLASS_GEAR.knight;   // จักรพรรดิเงาใช้ของอัศวินได้
+    const SPEC_CLS = { execute: ['knight', 'monarch'], lifesteal: ['knight', 'monarch'], reach: ['knight', 'monarch'], crit: ['knight', 'monarch'], bulwark: ['tank'], quake: ['tank'], manasteal: ['mage'], chill: ['mage'] };
+    const ARMOR_CLS = { dragon: ['knight', 'monarch', 'tank'], thunder: ['knight', 'monarch', 'mage'], shadow: ['monarch'], fortress: ['tank'], arcane: ['mage'] };
+    SPECIALS.push(
+        { name: 'ดาบโล่พิทักษ์นิรันดร์', special: 'bulwark', kind: 'swordshield', desc: 'ลดดาเมจที่ได้รับ 15% + โล่เพิ่ม DEF' },
+        { name: 'ค้อนพสุธาและโล่เหล็กไหล', special: 'quake', kind: 'hammershield', desc: '20% สตันศัตรู 1 วินาที + โล่เพิ่ม DEF' },
+        { name: 'ไม้กายสิทธิ์น้ำแข็งนิรันดร์', special: 'chill', kind: 'wand', desc: '15% แช่แข็งศัตรู 1.5 วินาที' }
+    );
+    SPECIAL_ARMORS.push(
+        { name: 'เกราะป้อมปราการทองแดง', style: 'fortress', desc: 'ไหล่หอคอยและตราโล่เรืองแสง DEF สูงพิเศษ' },
+        { name: 'อาภรณ์จอมเวทดารา', style: 'arcane', desc: 'วงรูนและดวงดาวโคจร DEF สูงพิเศษ' }
+    );
+    const gearOf = () => CLASS_GEAR[playerStats.cls] || CLASS_GEAR.knight;
+    const canUse = it => !it.cls || it.cls.includes(playerStats.cls);
+    const gearText = id => { const g = CLASS_GEAR[id]; return 'ใช้: ' + g.wk.map(k => KIND_NAME[k]).join(' / ') + ' • ' + g.ak.map(k => KIND_NAME[k]).join(' / ') + (id === 'monarch' ? ' (ใช้ของอัศวินได้)' : ''); };
     let lootExtra = '';
-    
-    // ปรับการสุ่มไอเทมตามอาชีพที่เลือก
-    function pickKind(type) { 
-        const cls = playerStats.cls || 'knight';
-        let pool = [];
-        if (type === 'weapon') {
-            if (cls === 'tank') pool = ['mace', 'sword'];
-            else if (cls === 'mage') pool = ['dagger']; // dagger จะถูกมองว่าเป็นอาวุธเวทหรือคทาสั้น
-            else pool = ['sword', 'axe']; // Knight & Monarch
-        } else {
-            if (cls === 'tank') pool = ['plate'];
-            else if (cls === 'mage') pool = ['robe'];
-            else pool = ['plate', 'leather']; // Knight & Monarch
-        }
-        return pool[Math.floor(Math.random() * pool.length)];
-    }
-    
+    function pickKind(type) { const a = type === 'weapon' ? gearOf().wk : gearOf().ak; return a[Math.floor(Math.random() * a.length)]; }
     function rollMpDrop(e) {
+        // ยาฟื้นมานา: ดรอปอิสระจากยาฮีลเลือด โอกาส 25% จากมอนสเตอร์ทั่วไป
         if (Math.random() < 0.25) potions.push({ x: e.x + 18, y: e.y + 10, mp: Math.max(10, Math.floor(playerStats.maxMana * 0.15)), mesh: null });
     }
     function makeSpecialArmor() {
         const d = gameState.dungeon || { tier: 0 };
-        const rank = RANKS[6], def = SPECIAL_ARMORS[Math.floor(Math.random() * SPECIAL_ARMORS.length)];
-        return { id: Date.now() + Math.random(), name: `${def.name} [${rank.name}]`, type: 'armor', rank, style: def.style, desc: def.desc, unique: true,
+        const rank = RANKS[6], pool = SPECIAL_ARMORS.filter(a => ARMOR_CLS[a.style].includes(playerStats.cls)), def = pool[Math.floor(Math.random() * pool.length)];
+        return { id: Date.now() + Math.random(), name: `${def.name} [${rank.name}]`, type: 'armor', rank, style: def.style, cls: ARMOR_CLS[def.style], desc: def.desc, unique: true,
             stat: Math.floor(3 * rank.mult * (1 + d.tier * 0.3)) + Math.floor(Math.random() * 4) };
     }
 
@@ -898,7 +830,7 @@
     function buildWeapon(it) {
         const g = new THREE.Group(), ri = rIdx(it), rc = rHex(it), gl = ri >= 4 ? 0.5 + (ri - 4) * 0.3 : 0.1;
         let kind = it.special || it.kind || WK[Math.floor(Math.abs(it.id)) % 4];
-        if (!['sword', 'dagger', 'axe', 'mace', 'execute', 'lifesteal', 'reach', 'manasteal', 'crit'].includes(kind)) kind = 'sword';
+        if (!['sword', 'dagger', 'axe', 'mace', 'spear', 'swordshield', 'hammershield', 'staff', 'wand', 'execute', 'lifesteal', 'reach', 'manasteal', 'crit', 'bulwark', 'quake', 'chill'].includes(kind)) kind = 'sword';
         const steel = MT(0xe5e7eb, rc, gl * 0.4), dark = MT(0x1f2937), gold = MT(0xfbbf24, 0xb45309, 0.35), wood = M(0x78350f, { roughness: 0.9 }), edge = EM(rc, gl + 0.4);
         if (kind === 'sword' || kind === 'dagger') {
             const L = kind === 'sword' ? 42 : 22, W = kind === 'sword' ? 8 : 6;
@@ -927,6 +859,61 @@
             });
             const fl = mk(new THREE.TorusGeometry(8.5, 1.4, 6, 16), gold, 40, 0, 0); fl.rotation.y = Math.PI / 2; g.add(fl);
             g.add(sph(2.6, gold, -3, 0, 0));
+                } else if (kind === 'spear') {
+            g.add(cylX(1.6, 1.8, 80, wood, 30, 0, 0));
+            const hd = coneX(4.2, 20, steel, 80, 0, 0, 4); hd.scale.x = 0.5; g.add(hd);
+            g.add(cylX(2.7, 2.7, 3, gold, 68, 0, 0)); g.add(sph(2.2, M(0xdc2626), 64, 0, 0));
+            g.add(bx(8, 2, 6, edge, 74, 0, 0));
+            if (ri >= 5) g.add(octa(2.4, EM(rc, 1.6), 58, 3, 0));
+        } else if (kind === 'swordshield') {
+            g.add(bx(36, 3.4, 9, steel, 22, 0, 0));
+            const tp = coneX(4.5, 9, steel, 44, 0, 0, 4); tp.scale.x = 0.4; g.add(tp);
+            g.add(bx(30, 3.8, 2, edge, 22, 0, 0));
+            g.add(bx(3.5, 5, 22, MT(0xb45309, 0x78350f, 0.2), 4, 0, 0));
+            g.add(cylX(1.9, 1.9, 9, dark, -2, 0, 0)); g.add(sph(3.4, MT(0xb45309), -7, 0, 0));
+        } else if (kind === 'hammershield') {
+            g.add(cylX(2, 2.2, 44, wood, 16, 0, 0));
+            g.add(bx(16, 13, 13, MT(0x9ca3af, rc, gl * 0.5), 42, 0, 0));
+            g.add(bx(4, 15, 15, MT(0x6b7280), 33, 0, 0)); g.add(bx(4, 15, 15, MT(0x6b7280), 51, 0, 0));
+            const bs = coneX(3, 11, steel, 31, 0, 0, 4); bs.rotation.z = Math.PI / 2; g.add(bs);
+            g.add(sph(2.8, gold, -3, 0, 0));
+        } else if (kind === 'staff') {
+            g.add(cylX(1.8, 2.2, 62, wood, 26, 0, 0));
+            const cr = mk(new THREE.TorusGeometry(7, 1.1, 6, 18), gold, 58, 0, 0); cr.rotation.y = Math.PI / 2; g.add(cr);
+            const orb = sph(5, EM(rc, 0.8 + gl), 62, 0, 0); g.add(orb);
+            [0, 1, 2].forEach(i => { const a = i * 2.094; const c = mk(new THREE.ConeGeometry(1.2, 9, 5), gold, 56, Math.cos(a) * 6, Math.sin(a) * 6); c.rotation.z = -Math.PI / 2; g.add(c); });
+            g.userData.tick = t => { orb.scale.setScalar(1 + 0.08 * Math.sin(t * 3)); };
+        } else if (kind === 'wand') {
+            g.add(cylX(1.5, 1.9, 36, M(0x4c1d95, { roughness: 0.6 }), 14, 0, 0));
+            g.add(cylX(2.2, 2.2, 3, gold, 30, 0, 0));
+            const st5 = octa(4.5, EM(rc, 1.0 + gl), 38, 0, 0); st5.scale.x = 1.3; g.add(st5);
+            g.add(sph(2.2, gold, -4, 0, 0));
+            g.userData.tick = t => { st5.rotation.x = t * 2; };
+        } else if (kind === 'bulwark') {
+            const glowB = EM(0x60a5fa, 1.3), wh = MT(0xf1f5f9, 0x93c5fd, 0.3);
+            g.add(bx(40, 3.4, 10, wh, 24, 0, 0));
+            const tp = coneX(5, 10, wh, 49, 0, 0, 4); tp.scale.x = 0.4; g.add(tp);
+            g.add(bx(32, 3.8, 3, glowB, 24, 0, 0));
+            [-1, 1].forEach(s => { const w = mk(new THREE.ConeGeometry(3, 14, 5), MT(0xfbbf24, 0xb45309, 0.4), 4, 0, s * 10); w.rotation.x = s * Math.PI / 2; g.add(w); });
+            g.add(cylX(2, 2, 10, dark, -2, 0, 0)); g.add(octa(3.6, glowB, -8, 0, 0));
+            g.userData.tick = t => { glowB.emissiveIntensity = 1.3 + 0.4 * Math.sin(t * 4); };
+        } else if (kind === 'quake') {
+            const hot = EM(0xf97316, 1.3), rock = MT(0x44403c, 0x7c2d12, 0.3);
+            g.add(cylX(2.2, 2.6, 50, M(0x292524, { roughness: 0.9 }), 18, 0, 0));
+            g.add(bx(22, 18, 18, rock, 48, 0, 0));
+            [-1, 1].forEach(s => g.add(bx(24, 2, 1.2, hot, 48, 9.5, s * 6)));
+            g.add(bx(2, 12, 12, hot, 59.5, 0, 0));
+            [-1, 1].forEach(s => { const c = mk(new THREE.ConeGeometry(4, 12, 5), rock, 48, s * 14, 0); if (s < 0) c.rotation.z = Math.PI; g.add(c); });
+            const em = [0, 1, 2].map(() => { const o = sph(2, hot); g.add(o); return o; });
+            g.userData.tick = t => { hot.emissiveIntensity = 1.3 + 0.5 * Math.sin(t * 6); em.forEach((o, i) => { const a = t * 3 + i * 2.094; o.position.set(48 + Math.cos(a) * 17, Math.sin(a) * 17, Math.sin(a * 0.5) * 10); }); };
+        } else if (kind === 'chill') {
+            const ice = EM(0x7dd3fc, 1.4);
+            g.add(cylX(1.5, 1.9, 40, MT(0xe2e8f0, 0x7dd3fc, 0.3), 16, 0, 0));
+            const flake = new THREE.Group(); flake.position.set(42, 0, 0);
+            for (let i = 0; i < 3; i++) { const b = bx(1, 18, 1.5, ice, 0, 0, 0); b.rotation.x = i * Math.PI / 3; flake.add(b); }
+            flake.add(octa(3.5, ice, 0, 0, 0));
+            g.add(flake); g.add(sph(2.2, gold, -4, 0, 0));
+            g.userData.tick = t => { flake.rotation.x = t * 1.5; ice.emissiveIntensity = 1.2 + 0.4 * Math.sin(t * 5); };
         } else if (kind === 'execute') {
             const bm = EM(0xef4444, 1.4), em = EM(0xf97316, 1.1), blk = MT(0x1f2937);
             g.add(bx(58, 3.4, 12, blk, 36, 0, 0));
@@ -976,6 +963,25 @@
         return g;
     }
 
+    // ---------- Shields (tank off-hand, face points to +x) ----------
+    function hasShield(it) { return ['swordshield', 'hammershield', 'bulwark', 'quake'].includes(it.special || it.kind); }
+    function buildShield(it) {
+        const g = new THREE.Group(), ri = rIdx(it), rc = rHex(it), sp = it.special;
+        const acc = sp ? SPEC_COL[sp] : rc, gl = ri >= 4 ? 1.1 : 0.4;
+        const body = sp === 'bulwark' ? MT(0xf1f5f9, 0x93c5fd, 0.25) : sp === 'quake' ? MT(0x44403c, 0x7c2d12, 0.25) : MT(0x9ca3af, rc, 0.12);
+        const rim = MT(sp ? 0xfbbf24 : 0xb45309, sp ? 0xb45309 : 0x78350f, 0.3);
+        const sh = new THREE.Shape();
+        sh.moveTo(-11, 13); sh.lineTo(11, 13); sh.lineTo(11, 1); sh.quadraticCurveTo(11, -14, 0, -19); sh.quadraticCurveTo(-11, -14, -11, 1); sh.closePath();
+        const gm = new THREE.ExtrudeGeometry(sh, { depth: 3, bevelEnabled: false });
+        gm.translate(0, 0, -1.5); gm.rotateY(Math.PI / 2);
+        g.add(mk(gm, body, 0, 0, 0));
+        const rm = mk(gm, rim, -0.8, 0, 0); rm.scale.set(1, 1.1, 1.1); g.add(rm);
+        g.add(bx(1, 28, 3.2, EM(acc, gl), 2, -1, 0)); g.add(bx(1, 3.2, 17, EM(acc, gl), 2, 6, 0));
+        g.add(sph(3.6, MT(0xfbbf24, 0xb45309, 0.5), 2.6, 3, 0));
+        if (ri >= 5 || sp) [-1, 1].forEach(s => g.add(octa(2, EM(acc, 1.6), 2.4, 9, s * 7)));
+        return g;
+    }
+
     // ---------- Armor (player-local coordinates) ----------
     function buildArmor(it, solo) {
         const g = new THREE.Group(), ex = g.userData.extra = [], tick = [];
@@ -983,8 +989,8 @@
         const st = it.style || it.kind || AK[Math.floor(Math.abs(it.id)) % 3];
         const uniq = !!STYLE_COL[st], accent = uniq ? STYLE_COL[st] : rc;
         const gl = uniq ? 1.4 : (ri >= 4 ? 0.7 + (ri - 4) * 0.3 : 0.25);
-        const pal = { plate: [0x94a3b8, 0x475569], leather: [0x854d0e, 0x451a03], robe: [0x4f46e5, 0x1e1b4b], dragon: [0x7f1d1d, 0x1c0a0a], shadow: [0x0f0b1f, 0x1e1b4b], thunder: [0xf5f5f4, 0xd97706] }[st] || [0x94a3b8, 0x475569];
-        const soft = st === 'leather' || st === 'robe', big = !soft || uniq;
+        const pal = { plate: [0x94a3b8, 0x475569], leather: [0x854d0e, 0x451a03], robe: [0x4f46e5, 0x1e1b4b], dragon: [0x7f1d1d, 0x1c0a0a], shadow: [0x0f0b1f, 0x1e1b4b], thunder: [0xf5f5f4, 0xd97706], heavy: [0x6b7280, 0x1f2937], fortress: [0xb45309, 0x78350f], arcane: [0x312e81, 0x1e1b4b] }[st] || [0x94a3b8, 0x475569];
+        const soft = st === 'leather' || st === 'robe' || st === 'arcane', big = !soft || uniq, heavy = st === 'heavy' || st === 'fortress';
         const main = soft ? M(pal[0], { roughness: 0.9, metalness: 0.05 }) : MT(pal[0], 0, 0, { roughness: 0.4 });
         const trim = st === 'thunder' ? MT(0xfbbf24, 0xb45309, 0.4) : (uniq ? MT(pal[1]) : MT(rc, rc, 0.2));
         const glow = EM(accent, gl);
@@ -993,7 +999,7 @@
         const belt = mk(new THREE.TorusGeometry(13.6, 1.7, 6, 20), trim, 0, 18, 0); belt.rotation.x = Math.PI / 2; g.add(belt);
         const gor = mk(new THREE.TorusGeometry(7.5, 2, 6, 14), trim, 0, 37.5, 0); gor.rotation.x = Math.PI / 2; g.add(gor);
         [-1, 1].forEach(s => {
-            const pr = big ? 10 : 7.5;
+            const pr = heavy ? 12.5 : (big ? 10 : 7.5);
             const pd = mk(new THREE.SphereGeometry(pr, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), main, 0, 35, s * 15.5); pd.rotation.x = s * 0.4; g.add(pd);
             const rim = mk(new THREE.TorusGeometry(pr, 1.1, 6, 16), trim, 0, 35, s * 15.5); rim.rotation.x = Math.PI / 2 + s * 0.4; g.add(rim);
             if (st === 'dragon') for (let k = 0; k < 3; k++) {
@@ -1007,9 +1013,9 @@
                 const fl = mk(new THREE.ConeGeometry(4.2, 16, 6), EM(0x8b5cf6, 1.6), 0, 47, s * 16); g.add(fl);
                 tick.push(t => { fl.scale.y = 1 + 0.35 * Math.sin(t * 9 + s); });
             }
-            if (st !== 'robe') { g.add(bx(2.4, 10, 7, main, 12.5, 12.5, s * 7.5)); g.add(bx(2.4, 10, 7, main, -12.5, 12.5, s * 7.5)); }
+            if (st !== 'robe' && st !== 'arcane') { g.add(bx(2.4, 10, 7, main, 12.5, 12.5, s * 7.5)); g.add(bx(2.4, 10, 7, main, -12.5, 12.5, s * 7.5)); }
         });
-        if (st === 'robe') g.add(mk(new THREE.CylinderGeometry(13.5, 17, 16, 14, 1, true), M(pal[0], { roughness: 0.9, side: THREE.DoubleSide }), 0, 10, 0));
+        if (st === 'robe' || st === 'arcane') g.add(mk(new THREE.CylinderGeometry(13.5, 17, 16, 14, 1, true), M(pal[0], { roughness: 0.9, side: THREE.DoubleSide }), 0, 10, 0));
         else { g.add(bx(2.4, 10, 7, main, 12.5, 12.5, 0)); g.add(bx(2.4, 10, 7, main, -12.5, 12.5, 0)); }
         if (!solo) {
             playerMesh.userData.arms.forEach(a => {
@@ -1049,6 +1055,25 @@
             ring.rotation.x = -Math.PI / 2; ring.position.y = 0.8; g.add(ring);
             tick.push(t => { ring.rotation.z = t; ring.material.opacity = 0.4 + 0.2 * Math.sin(t * 3); });
         }
+        if (heavy) {
+            [-1, 1].forEach(s => { const tp = bx(9, 4, 24, trim, 0, 47, s * 16.5); tp.rotation.x = s * 0.35; g.add(tp); });
+            g.add(bx(4, 22, 15, trim, 14.8, 28, 0));
+            const brow = mk(new THREE.TorusGeometry(10.5, 1.8, 6, 16), trim, 0, 50, 0); brow.rotation.x = Math.PI / 2; g.add(brow);
+            g.add(bx(2.5, 10, 4, trim, 11, 52, 0));
+        }
+        if (st === 'fortress') {
+            g.add(bx(1.5, 26, 15, EM(0xf59e0b, 0.6), -13.5, 30, 0));
+            for (let k = 0; k < 3; k++) g.add(mk(new THREE.ConeGeometry(2.2, 10, 5), MT(0xfbbf24, 0xb45309, 0.5), -1, 59, (k - 1) * 5));
+        }
+        if (st === 'arcane') {
+            const rings = [0, 1, 2].map(i => { const r = mk(new THREE.TorusGeometry(17 + i * 2, 0.6, 6, 32), EM(0x818cf8, 1.4), 0, 20 + i * 12, 0); r.rotation.x = Math.PI / 2; g.add(r); return r; });
+            const stars = [0, 1, 2, 3].map(() => { const o = octa(2.4, EM(0xc7d2fe, 1.8)); g.add(o); return o; });
+            const circ = mk(new THREE.TorusGeometry(8, 0.8, 6, 20), EM(0xfde68a, 1.6), 0, 58, 0); circ.rotation.x = Math.PI / 2; g.add(circ);
+            tick.push(t => {
+                rings.forEach((r, i) => { r.rotation.z = t * (i % 2 ? -1.2 : 1.2); r.position.y = 20 + i * 12 + Math.sin(t * 2 + i) * 1.5; });
+                stars.forEach((o, i) => { const a = t * 1.7 + i * 1.571; o.position.set(Math.cos(a) * 22, 34 + Math.sin(t * 2 + i) * 6, Math.sin(a) * 22); o.rotation.y = t * 2; });
+            });
+        }
         g.userData.tick = t => tick.forEach(f => f(t));
         return g;
     }
@@ -1078,6 +1103,7 @@
             let model;
             if (it.type === 'weapon') { model = buildWeapon(it); model.rotation.set(-0.75, 0, Math.PI / 2); }
             else model = buildArmor(it, true);
+            if (it.type === 'weapon' && hasShield(it)) { const sh = buildShield(it); sh.position.set(0, 14, 24); holder.add(sh); model.position.z = -12; }
             if (model.userData.tick) model.userData.tick(1.0);
             holder.add(model); _iconScene.add(holder);
             holder.updateMatrixWorld(true);
@@ -1103,7 +1129,7 @@
     }
 
     // ---------- Equip sync, loot reveal, environment animation ----------
-    let _wId = null, _aId = null, curW = null, armorG = null;
+    let _wId = null, _aId = null, curW = null, curShield = null, armorG = null, _lastStep = 0;
     const reveals = [], flames = [], envSpin = [];
     function syncEquipVisuals(t) {
         const w = playerStats.equipped.weapon, a = playerStats.equipped.armor;
@@ -1111,7 +1137,12 @@
         if (wid !== _wId) {
             _wId = wid;
             while (sword.children.length) sword.remove(sword.children[0]);
-            if (w) { curW = buildWeapon(w); sword.add(curW); } else { curW = null; (sword.userData.def || []).forEach(c => sword.add(c)); }
+            if (curShield && curShield.parent) curShield.parent.remove(curShield);
+            curShield = null;
+            if (w) {
+                curW = buildWeapon(w); sword.add(curW);
+                if (hasShield(w)) { curShield = buildShield(w); curShield.position.set(7, -10, -5); curShield.scale.setScalar(0.85); playerMesh.userData.arms[0].add(curShield); }
+            } else { curW = null; (sword.userData.def || []).forEach(c => sword.add(c)); }
             arc.material.color.setHex(w ? (w.special ? SPEC_COL[w.special] : rHex(w)) : 0xffffff);
         }
         if (aid !== _aId) {
@@ -1123,6 +1154,8 @@
         if (armorG && armorG.userData.tick) armorG.userData.tick(t);
         flames.forEach((f, i) => { f.scale.y = 1 + 0.3 * Math.sin(t * 10 + i * 2); f.scale.x = f.scale.z = 1 + 0.15 * Math.sin(t * 13 + i); });
         envSpin.forEach(o => { o.rotation.z = t * 0.25; });
+        const stepIdx = Math.floor(walkPh / Math.PI);
+        if (stepIdx !== _lastStep) { _lastStep = stepIdx; if (walkAmp > 0.6 && !gameState.isPaused) sfx.play('step', gameState.floor === 0); }
         const now = performance.now() / 1000;
         for (let i = reveals.length - 1; i >= 0; i--) {
             const r = reveals[i], age = now - r.t0;
@@ -1142,7 +1175,7 @@
         beam.position.y = 150;
         const ring = new THREE.Mesh(new THREE.RingGeometry(26, 32, 40), new THREE.MeshBasicMaterial({ color: acc, transparent: true, opacity: 0.7, side: THREE.DoubleSide }));
         ring.rotation.x = -Math.PI / 2; ring.position.y = 1.5;
-        if (item.type === 'weapon') { const w = buildWeapon(item); w.rotation.z = Math.PI / 2; w.position.y = -34; model.add(w); model.userData.tick = w.userData.tick; }
+        if (item.type === 'weapon') { const w = buildWeapon(item); w.rotation.z = Math.PI / 2; w.position.y = -34; model.add(w); if (hasShield(item)) { const sh = buildShield(item); sh.position.set(0, -4, 22); model.add(sh); w.position.z = -10; } model.userData.tick = w.userData.tick; }
         else { const a = buildArmor(item, true); a.position.y = -32; model.add(a); model.userData.tick = a.userData.tick; }
         holder.add(model); holder.scale.setScalar(0.01); holder.position.y = 110;
         g.add(beam, ring, holder); g.position.set(player.x, 0, player.y); scene.add(g);
@@ -1709,13 +1742,7 @@
     });
 
     window.addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; });
-    window.addEventListener('mousedown', (e) => { 
-        if (e.button === 0 && e.target === canvas) { 
-            mouse.left = true; 
-            if (!gameState.isPaused) player.attack(); 
-            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-        } 
-    });
+    window.addEventListener('mousedown', (e) => { if (e.button === 0 && e.target === canvas) { mouse.left = true; if (!gameState.isPaused) player.attack(); } });
     window.addEventListener('mouseup', () => mouse.left = false);
     document.addEventListener('contextmenu', e => { if (e.target === canvas) e.preventDefault(); });
 
@@ -1776,7 +1803,6 @@
 
                 if (keys.space && this.dashCooldown <= 0) {
                     this.dashTimer = 0.2; this.dashCooldown = 1.0; this.invulnTimer = 0.3;
-                    playSFX('dash');
                 }
             }
 
@@ -1796,7 +1822,6 @@
             if (this.attackTimer > 0) return;
             if (playerStats.cls === 'mage') { this.mageAttack(); return; }
             this.attackTimer = 0.3;
-            playSFX('attack');
 
             const attackRange = 85 + ((playerStats.equipped.weapon && playerStats.equipped.weapon.special === 'reach') ? 45 : 0);
             const attackArc = Math.PI / 2;
@@ -1826,8 +1851,6 @@
 
         mageAttack() {
             this.attackTimer = 0.3;
-            playSFX('mage_attack');
-            
             let best = null, bd = 1e9;
             enemies.forEach(e => {
                 if (e.isDead) return;
@@ -1845,13 +1868,12 @@
             const sk = playerStats.skills[idx];
             if (!sk || sk.level === 0 || sk.cd > 0 || gameState.isPaused) return;
             
+            // ยกเว้น domain ไม่ต้องเช็คตอนกด เพราะมันเป็นสลับเปิดปิดและกินเรื่อยๆ
             if (playerStats.mana < sk.mp && sk.fx !== 'domain') { showMessage('มานาไม่พอ!', '#60a5fa'); return; }
             
             const atk = getTotalAtk(), lv = sk.level;
             const inR = (x, y, r) => enemies.filter(e => !e.isDead && Math.hypot(e.x - x, e.y - y) < r + e.radius);
             let cost = sk.fx === 'domain' ? 0 : sk.mp;
-            
-            playSFX('skill');
             
             switch (sk.fx) {
                 case 'cleave':
@@ -1939,8 +1961,8 @@
         takeDamage(amount) {
             if (this.invulnTimer > 0) return;
             
-            playSFX('hit');
             let actualDamage = Math.max(1, amount - getTotalDef());
+            if (playerStats.equipped.weapon && playerStats.equipped.weapon.special === 'bulwark') actualDamage = Math.max(1, Math.floor(actualDamage * 0.85));
             playerStats.hp -= actualDamage;
             this.invulnTimer = 1.0;
             
@@ -1953,7 +1975,7 @@
         die() {
             showMessage(`คุณตายในดันเจี้ยน... ฟื้นคืนชีพที่เมืองศูนย์กลาง`, '#f87171');
             playerStats.hp = playerStats.maxHp;
-            this.domainActive = false;
+            this.domainActive = false; // ปิดโดเมนเมื่อตาย
             loadFloor(0);
             saveGame();
             updateUI();
@@ -2004,19 +2026,18 @@
 
         takeDamage(amount) {
             this.hp -= amount; this.hitFlashTimer = 0.1;
-            playSFX('hit');
             showFloatingText(amount.toString(), this.x, this.y - this.radius - 10, '#ffffff');
             if (this.hp <= 0) this.die();
         }
 
         die() {
             this.isDead = true;
-            playSFX('monster_die');
             if (playerStats.cls === 'monarch') corpses.push({ x: this.x, y: this.y, emoji: this.emoji, isBoss: this.isBoss, radius: this.radius, maxHp: this.maxHp, atk: this.atk, speed: this.speed, ttl: 40, mesh: null });
             
             playerStats.gold += this.goldReward;
             if (this.isBoss) bossLoot(this);
             else if (rollMpDrop(this), Math.random() < 0.25) {
+                // ดรอปยารักษา (Potion) โอกาส 25%
                 potions.push({ 
                     x: this.x, y: this.y, 
                     heal: Math.max(15, Math.floor(playerStats.maxHp * 0.1)), 
@@ -2089,13 +2110,12 @@
                 if (Math.hypot(player.x - this.x, player.y - this.y) < 60 && !this.used) {
                     if (this.open) {
                         this.used = true;
-                        playSFX('loot');
                         setTimeout(() => {
                             if (isBossFloor(gameState.floor)) { completeDungeon(); }
                             else loadFloor(gameState.floor + 1);
                         }, 0);
                     } else if (this.msgCd <= 0) {
-                        showMessage(`🔒 ประตูถูกล็อก! กำจัดศัตรูให้หมดก่อน (เหลือ ${left})`, '#ef4444');
+                        showMessage(`🔒 ประตูถูกล็อก! กำจัดศัตรูให้หมดก่อน (เหลือ ${left})`, '#ef4444'); sfx.play('locked');
                         this.msgCd = 2.5;
                     }
                 }
@@ -2200,7 +2220,7 @@
     function checkFloorClear() {
         if (gameState.floor > 0 && enemies.every(e => e.isDead)) {
             spawnInteractable(0, 0, 'chest');
-            showMessage("ศัตรูถูกกำจัดหมดแล้ว! ประตูเปิดแล้ว", '#fbbf24');
+            showMessage("ศัตรูถูกกำจัดหมดแล้ว! ประตูเปิดแล้ว", '#fbbf24'); sfx.play('clear');
         }
     }
 
@@ -2211,7 +2231,7 @@
         const __k = pickKind(type), __ri = RANKS.indexOf(selectedRank);
         return {
             id: Date.now() + Math.random(),
-            kind: __k, name: `${KIND_NAME[__k]}${RANK_ADJ[__ri]} [${selectedRank.name}]`,
+            kind: __k, cls: gearOf().cls, defBonus: /shield/.test(__k) ? Math.floor(statBonus * 0.35) : 0, name: `${KIND_NAME[__k]}${RANK_ADJ[__ri]} [${selectedRank.name}]`,
             type: type,
             rank: selectedRank,
             stat: statBonus
@@ -2226,9 +2246,6 @@
         
         playerStats.gold += goldFound;
         playerStats.inventory.push(item);
-        
-        playSFX('loot');
-        
         if (rIdx(item) >= 4) setTimeout(() => showLootReveal(item), 200);
         
         let chestBonus = '';
@@ -2428,6 +2445,8 @@
                 slot.style.background = `radial-gradient(circle at 50% 40%, ${item.rank.color}33, rgba(0,0,0,0.55) 70%)`;
                 slot.style.setProperty('--c', item.rank.color);
                 if (item.unique) slot.classList.add('uniq');
+                if (!canUse(item)) slot.style.opacity = '0.4';
+                if (item.cls) { slot.title += '\n' + (item.defBonus ? 'DEF +' + item.defBonus + ' (โล่)  ' : '') + 'สำหรับ: ' + item.cls.map(c => CLASSES[c].name).join(' / '); slot.insertAdjacentHTML('beforeend', `<div class="slot-cls">${CLASSES[item.cls[0]].icon}</div>`); }
                 slot.addEventListener('contextmenu', (e) => { e.preventDefault(); equipItem(item); });
             }
             container.appendChild(slot);
@@ -2435,6 +2454,7 @@
     }
     
     function equipItem(item) {
+        if (!canUse(item)) { showMessage('อาชีพนี้สวมใส่ไม่ได้ — สำหรับ: ' + item.cls.map(c => CLASSES[c].name).join(' / '), '#ef4444'); return; }
         if (item.type === 'weapon') playerStats.equipped.weapon = (playerStats.equipped.weapon?.id === item.id) ? null : item;
         else if (item.type === 'armor') playerStats.equipped.armor = (playerStats.equipped.armor?.id === item.id) ? null : item;
         saveGame();
@@ -2454,6 +2474,7 @@
         const container = document.getElementById('shop-sell-list');
         const eq = [playerStats.equipped.weapon?.id, playerStats.equipped.armor?.id];
         
+        // กรองเอาไอเทมที่ไม่ได้สวมใส่ออกมา
         let sellableItems = playerStats.inventory.filter(it => !eq.includes(it.id));
         
         if (sellableItems.length === 0) {
@@ -2477,6 +2498,7 @@
     }
 
     function sellSpecificItem(itemId) {
+        // ค้นหา Index ของไอเทม
         let idx = playerStats.inventory.findIndex(it => it.id.toString() === itemId.toString());
         if (idx !== -1) {
             let item = playerStats.inventory[idx];
@@ -2487,11 +2509,10 @@
             
             spawnParticles(player.x, player.y, '#facc15', 10);
             showMessage(`ขาย ${item.name} ได้รับ ${price} ทอง`, '#facc15');
-            playSFX('loot');
             
             saveGame();
             updateUI();
-            renderShopSellList();
+            renderShopSellList(); // รีเฟรชรายการที่ขายได้
         }
     }
 
@@ -2510,7 +2531,7 @@
         if (type === 'gachaWep' || type === 'gachaArm') cost = 1000;
         if (type === 'heal') cost = 50;
 
-        if (amount < 1) amount = 1;
+        if (amount < 1) amount = 1; // ป้องกันใส่ค่าติดลบหรือ 0
 
         let totalCost = cost * amount;
 
@@ -2530,7 +2551,6 @@
             saveGame();
             updateUI(); 
             spawnParticles(player.x, player.y, '#34d399', 15);
-            playSFX('loot');
             
             let msg = type.includes('gacha') ? "สุ่มอุปกรณ์สำเร็จ! เปิดกระเป๋าเพื่อดู" : (type === 'heal' ? "ฟื้นฟูเลือดสำเร็จ!" : `ซื้อสำเร็จ ${amount} พอยต์!`);
             showMessage(msg, '#34d399');
@@ -2626,8 +2646,8 @@
                     if (p.mp) playerStats.mana = Math.min(playerStats.maxMana, playerStats.mana + p.mp);
                     else playerStats.hp = Math.min(playerStats.maxHp, playerStats.hp + p.heal);
                     spawnParticles(p.x, p.y, p.mp ? '#38bdf8' : '#f43f5e', 20);
+                    sfx.play(p.mp ? 'mpPot' : 'hpPot');
                     showFloatingText(p.mp ? `+${p.mp} MP` : `+${p.heal}`, p.x, p.y - 30, p.mp ? '#38bdf8' : '#f43f5e');
-                    playSFX('loot');
                     updateUI();
                     if (p.mesh) dynGroup.remove(p.mesh);
                     potions.splice(i, 1);
@@ -2654,26 +2674,38 @@
     }
 
     function startGame() {
-        const nameInput = document.getElementById('player-name').value.trim();
+        // ทำชื่อให้เป็นมาตรฐาน: ตัดช่องว่างหัวท้าย, ยุบช่องว่างซ้อน, รวมรูปอักขระ Unicode
+        const normName = n => String(n).normalize('NFC').replace(/\s+/g, ' ').trim();
+        const nameKey = n => normName(n).toLowerCase();          // ใช้เทียบชื่อซ้ำ (ไม่สนตัวพิมพ์เล็ก/ใหญ่)
+        const nameInput = normName(document.getElementById('player-name').value);
         const pinInput = document.getElementById('player-pin').value.trim();
         
         if(!nameInput || pinInput.length !== 6 || !/^\d{6}$/.test(pinInput)) {
             alert("กรุณาตั้งชื่อ และกำหนดรหัสผ่านด้วยตัวเลข 6 หลักให้ครบถ้วน");
             return;
         }
-
-        initAudio(); // Initialize AudioContext on user gesture
+        if (nameKey(nameInput) === 'player') {
+            alert("❌ ชื่อนี้เป็นชื่อสงวนของระบบ กรุณาตั้งชื่ออื่น");
+            return;
+        }
 
         let accounts = JSON.parse(localStorage.getItem('dungeon_accounts') || '{}');
+        // หาบัญชีที่ชื่อซ้ำ: ตรงเป๊ะก่อน ถ้าไม่มีค่อยเทียบแบบไม่สนตัวพิมพ์/ช่องว่าง
+        const existingKey = accounts[nameInput] ? nameInput : Object.keys(accounts).find(k => nameKey(k) === nameKey(nameInput));
         
-        if (accounts[nameInput]) {
-            if (accounts[nameInput].pin !== pinInput) {
-                alert("❌ รหัสผ่านไม่ถูกต้อง! กรุณาลองใหม่อีกครั้ง");
+        if (existingKey) {
+            if (accounts[existingKey].pin !== pinInput) {
+                alert(existingKey === nameInput
+                    ? "❌ รหัสผ่านไม่ถูกต้อง! กรุณาลองใหม่อีกครั้ง"
+                    : "❌ ชื่อนี้ถูกใช้ไปแล้ว (ชื่อ \"" + existingKey + "\")\nหากเป็นบัญชีของคุณ กรุณาใส่รหัสผ่านให้ถูกต้อง หรือเลือกชื่อใหม่");
                 return;
             }
-            playerStats = accounts[nameInput].stats;
+            // โหลดข้อมูลเก่า (ใช้ชื่อตามที่สมัครไว้เดิมเสมอ)
+            playerStats = accounts[existingKey].stats;
+            playerStats.name = existingKey;
             recolorPlayer(playerStats.cls);
         } else {
+            // สร้างไอดีใหม่
             playerStats.name = nameInput;
             playerStats.classChosen = false;
             accounts[nameInput] = { pin: pinInput, stats: playerStats };
@@ -2716,7 +2748,7 @@
             Object.entries(CLASSES).map(([id, c]) => {
                 const cur = playerStats.cls === id, pend = _classPending === id;
                 const btn = cur ? '' : `<button onclick='requestClassChange("${id}")' class='${pend ? 'bg-red-600 hover:bg-red-500' : 'bg-cyan-700 hover:bg-cyan-600'} px-3 py-1 rounded text-xs font-bold whitespace-nowrap'>${pend ? 'กดอีกครั้งเพื่อยืนยัน ' + cost + ' G' : 'เปลี่ยน ' + cost + ' G'}</button>`;
-                return `<div class='flex items-center justify-between gap-2 bg-gray-800 p-2 rounded ${cur ? 'ring-2 ring-yellow-400' : ''}'><div class='text-left text-sm min-w-0'><span class='text-xl'>${c.icon}</span> <span class='font-bold ${c.color}'>${c.name}</span>${cur ? " <span class='text-xs text-yellow-300'>(อาชีพปัจจุบัน)</span>" : ''}<div class='text-xs text-gray-400'>${c.desc}</div><div class='text-xs text-gray-500'>❤️${c.hp} ⚔️${c.atk} 🛡️${c.def} 💧${c.mp} • ${c.skills.map(s => s.icon).join(' ')}</div></div>${btn}</div>`;
+                return `<div class='flex items-center justify-between gap-2 bg-gray-800 p-2 rounded ${cur ? 'ring-2 ring-yellow-400' : ''}'><div class='text-left text-sm min-w-0'><span class='text-xl'>${c.icon}</span> <span class='font-bold ${c.color}'>${c.name}</span>${cur ? " <span class='text-xs text-yellow-300'>(อาชีพปัจจุบัน)</span>" : ''}<div class='text-xs text-gray-400'>${c.desc}</div><div class='text-xs text-gray-500'>❤️${c.hp} ⚔️${c.atk} 🛡️${c.def} 💧${c.mp} • ${c.skills.map(s => s.icon).join(' ')}</div><div class='text-xs text-amber-300'>${gearText(id)}</div></div>${btn}</div>`;
             }).join('');
     }
     function requestClassChange(id) {
@@ -2737,18 +2769,423 @@
         playerStats.baseAtk += d.atk; playerStats.baseDef += d.def; playerStats.baseSpeed += d.spd;
         playerStats.maxMana += d.mp; playerStats.mana = playerStats.maxMana;
         playerStats.skillPoints += refund;
+        ['weapon', 'armor'].forEach(k => { const it = playerStats.equipped[k]; if (it && !canUse(it)) { playerStats.equipped[k] = null; showMessage('ถอด ' + it.name + ' ออก (อาชีพใหม่ใช้ไม่ได้)', '#fbbf24'); } });
         allies.forEach(a => { a.isDead = true; if (a.mesh) { dynGroup.remove(a.mesh); a.mesh = null; } });
         allies = [];
         player.domainActive = false;
         spawnParticles(player.x, player.y, '#22d3ee', 40);
-        playSFX('skill');
         showMessage(`🎭 เปลี่ยนเป็น ${CLASSES[id].name} สำเร็จ! (-${cost} G${refund ? ', คืนสกิลพอยต์ ' + refund : ''})`, '#22d3ee');
         saveGame(); updateUI(); renderShopClassList();
     }
+
+    // ==========================================
+    // SOUND ENGINE v2 (Web Audio, synthesized — no audio files)
+    // รีเวิร์บถ้ำ • แพนซ้าย-ขวาตามตำแหน่งศัตรู • เสียงไม่ซ้ำ (humanize)
+    // เสียงบรรยากาศ/ดนตรีสร้างสด ตามโซน: เมือง / ดันเจี้ยน / บอส
+    // ==========================================
+    const sfx = (() => {
+        let ctx = null, master = null, sfxBus = null, ambBus = null, ambDuck = null, rvSend = null, noiseBuf = null, muted = false;
+        const vol = 0.62, last = {};
+        let envRv = 0.16, curRv = 0.16, curPan = 0, curHum = 1, active = 0, stepAlt = 0;
+        let amb = null, mode = null;
+        try { muted = localStorage.getItem('dungeon_muted') === '1'; } catch (e) {}
+
+        // ปริมาณรีเวิร์บตามโซน (เมืองโปร่ง / ถ้ำก้อง / ห้องบอสก้องมาก)
+        const ENV = { town: 0.16, dungeon: 0.34, boss: 0.5 };
+        // ตัวคูณรีเวิร์บรายเสียง (0 = แห้ง เหมาะกับเสียง UI)
+        const WET = { click: 0, deny: 0.2, equip: 0.3, upgrade: 0.5, coin: 0.5, locked: 0.4, hpPot: 0.6, step: 0.55, hit: 0.7, swing: 0.6, dash: 0.7,
+            sparkle: 1.8, fanfare: 1.7, heal: 1.8, mpPot: 1.5, nova: 1.6, meteor: 1.5, domain: 1.7, voice: 1.4, clear: 1.5, gate: 1.4, chest: 1.4,
+            freeze: 1.7, summon: 1.5, army: 1.6, extract: 1.5, shadowHit: 1.5, shadowDie: 1.6, blink: 1.4 };
+        // ความแปรผันของพิทช์ต่อครั้ง (± สัดส่วน) กันเสียงซ้ำซากจนล้า
+        const HUM = { swing: 0.07, swingHeavy: 0.05, stab: 0.07, zap: 0.08, hit: 0.14, hurt: 0.06, dash: 0.07, step: 0.13, click: 0.04,
+            voice: 0.07, shadowHit: 0.08, shadowDie: 0.05, deny: 0.03, locked: 0.03, coin: 0.02, equip: 0.05 };
+        // เสียงใหญ่ ๆ จะ "ลด" เสียงบรรยากาศชั่วคราว (ducking) ให้เสียงเด่นขึ้นและไม่รก [ระดับ, ค้างกี่วินาที]
+        const DUCK = { nova: [0.35, 1.2], meteor: [0.4, 1.6], domain: [0.5, 1.0], fanfare: [0.5, 1.2], playerDie: [0.25, 2.5], army: [0.5, 1.0], gate: [0.6, 0.6] };
+
+        function makeImpulse(sec, decay) {
+            const sr = ctx.sampleRate, len = Math.floor(sr * sec), buf = ctx.createBuffer(2, len, sr), fade = sr * 0.012;
+            for (let c = 0; c < 2; c++) {
+                const d = buf.getChannelData(c); let lp = 0;
+                for (let i = 0; i < len; i++) {
+                    const t = i / len, n = (Math.random() * 2 - 1) * Math.pow(1 - t, decay);
+                    lp += (n - lp) * (0.5 - 0.42 * t);                 // หางเสียงค่อย ๆ ทึบลง เหมือนก้องในถ้ำหิน
+                    d[i] = lp * (i < fade ? i / fade : 1) * 1.6;
+                }
+            }
+            return buf;
+        }
+
+        function init() {
+            if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; }
+            try {
+                const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+                ctx = new AC();
+                master = ctx.createGain(); master.gain.value = muted ? 0 : vol;
+                const mlp = ctx.createBiquadFilter(); mlp.type = 'lowpass'; mlp.frequency.value = 11000; mlp.Q.value = 0.4;   // ลดความแหลมคม
+                const comp = ctx.createDynamicsCompressor();
+                comp.threshold.value = -20; comp.knee.value = 18; comp.ratio.value = 5; comp.attack.value = 0.004; comp.release.value = 0.22;
+                master.connect(mlp); mlp.connect(comp); comp.connect(ctx.destination);
+
+                sfxBus = ctx.createGain(); sfxBus.connect(master);
+                ambDuck = ctx.createGain(); ambDuck.connect(master);
+                ambBus = ctx.createGain(); ambBus.connect(ambDuck);
+
+                const conv = ctx.createConvolver(); conv.buffer = makeImpulse(2.4, 2.6);
+                rvSend = ctx.createGain(); rvSend.connect(conv);
+                const rvOut = ctx.createGain(); rvOut.gain.value = 0.9; conv.connect(rvOut); rvOut.connect(master);
+                const as = ctx.createGain(); as.gain.value = 0.45; ambBus.connect(as); as.connect(rvSend);
+
+                noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 3, ctx.sampleRate);
+                const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+
+                setInterval(sync, 700); sync();
+                document.addEventListener('visibilitychange', () => {
+                    if (!ctx) return;
+                    if (document.hidden) ctx.suspend(); else ctx.resume();
+                });
+            } catch (e) { ctx = null; }
+        }
+        function ok(key, gap) { const n = performance.now(); if (last[key] && n - last[key] < gap) return false; last[key] = n; return true; }
+
+        // ---------- routing: แพน + รีเวิร์บเซนด์ ----------
+        function route(node, rv) {
+            let out = node;
+            if (curPan && ctx.createStereoPanner) { const p = ctx.createStereoPanner(); p.pan.value = curPan; node.connect(p); out = p; }
+            out.connect(sfxBus);
+            const r = rv === undefined ? curRv : rv;
+            if (r > 0) { const s = ctx.createGain(); s.gain.value = r; out.connect(s); s.connect(rvSend); }
+        }
+
+        function tone(o) {
+            if (!ctx || muted) return;
+            if (active > 48 && !o.must) return;                         // จำกัดจำนวนเสียงพร้อมกัน กันกระตุกตอนสู้หนัก
+            const h = curHum, dur = o.dur || 0.15, v = o.v || 0.3, t0 = ctx.currentTime + (o.d || 0);
+            const osc = ctx.createOscillator(), g = ctx.createGain();
+            osc.type = o.type || 'sine';
+            osc.frequency.setValueAtTime(o.f0 * h, t0);
+            if (o.f1) osc.frequency.exponentialRampToValueAtTime(Math.max(1, o.f1 * h), t0 + dur);
+            let out = osc;
+            const lpf = o.lp || ((osc.type === 'square' || osc.type === 'sawtooth') ? 2600 : 0);   // คลื่นแหลมถูกกรองให้นุ่มเสมอ
+            if (lpf) { const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = lpf * h; osc.connect(f); out = f; }
+            if (o.vib) {
+                const lfo = ctx.createOscillator(), lg = ctx.createGain();
+                lfo.frequency.value = o.vib; lg.gain.value = o.vibD || o.f0 * 0.05;
+                lfo.connect(lg); lg.connect(osc.frequency); lfo.start(t0); lfo.stop(t0 + dur + 0.05);
+            }
+            const a = Math.min(Math.max(o.a || 0.01, 0.004), dur * 0.5);
+            g.gain.setValueAtTime(0.0001, t0);
+            g.gain.exponentialRampToValueAtTime(v, t0 + a);
+            g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+            out.connect(g); route(g, o.rv);
+            active++; osc.onended = () => { active--; };
+            osc.start(t0); osc.stop(t0 + dur + 0.05);
+        }
+        function noise(o) {
+            if (!ctx || muted) return;
+            if (active > 48 && !o.must) return;
+            const h = curHum, dur = o.dur || 0.15, t0 = ctx.currentTime + (o.d || 0);
+            const src = ctx.createBufferSource(); src.buffer = noiseBuf; src.loop = true;
+            const f = ctx.createBiquadFilter(); f.type = o.ft || 'bandpass'; f.Q.value = o.q || 1;
+            f.frequency.setValueAtTime((o.f0 || 1000) * h, t0);
+            if (o.f1) f.frequency.exponentialRampToValueAtTime(Math.max(20, o.f1 * h), t0 + dur);
+            const g = ctx.createGain(), a = Math.min(Math.max(o.a || 0.01, 0.004), dur * 0.5);
+            g.gain.setValueAtTime(0.0001, t0);
+            g.gain.exponentialRampToValueAtTime(o.v || 0.25, t0 + a);
+            g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+            src.connect(f); f.connect(g); route(g, o.rv);
+            active++; src.onended = () => { active--; };
+            src.start(t0, Math.random() * 1.5); src.stop(t0 + dur + 0.05);
+        }
+        // เสียงกระดิ่ง/คริสตัล (โอเวอร์โทนไม่ประสาน) ใช้แทนคลื่นสี่เหลี่ยมที่แข็ง ๆ
+        function bell(f, v, d) {
+            tone({ f0: f, dur: 0.55, v, d, a: 0.004 });
+            tone({ f0: f * 2.76, dur: 0.28, v: v * 0.3, d, a: 0.003 });
+            tone({ f0: f * 5.4, dur: 0.12, v: v * 0.12, d, a: 0.002 });
+        }
+        function duck(level, hold) {
+            if (!ctx) return;
+            const t = ctx.currentTime, p = ambDuck.gain;
+            p.cancelScheduledValues(t); p.setTargetAtTime(level, t, 0.04); p.setTargetAtTime(1, t + hold, 0.6);
+        }
+
+        // ---------- เสียงเอฟเฟกต์ ----------
+        const L = {
+            swing: () => { noise({ f0: 450, f1: 2200, q: 1.1, dur: 0.15, v: 0.2, a: 0.03 }); noise({ ft: 'highpass', f0: 3200, dur: 0.07, v: 0.04, d: 0.03 }); },
+            swingHeavy: () => { noise({ f0: 220, f1: 900, q: 1, dur: 0.22, v: 0.26, a: 0.04 }); tone({ f0: 130, f1: 58, dur: 0.22, v: 0.18, type: 'triangle', a: 0.03 }); },
+            stab: () => { noise({ f0: 1200, f1: 3500, q: 1, dur: 0.11, v: 0.18, a: 0.015 }); tone({ f0: 600, f1: 900, dur: 0.08, v: 0.07, type: 'triangle' }); },
+            zap: () => { tone({ f0: 1100, f1: 220, dur: 0.18, v: 0.15, type: 'sawtooth', lp: 3000 }); noise({ ft: 'highpass', f0: 3000, dur: 0.12, v: 0.08 }); tone({ f0: 2200, f1: 700, dur: 0.1, v: 0.04, d: 0.02 }); },
+            hit: () => { noise({ f0: 1400, q: 0.8, dur: 0.07, v: 0.26, a: 0.004 }); noise({ ft: 'highpass', f0: 2600, dur: 0.035, v: 0.1, a: 0.002 }); tone({ f0: 170, f1: 58, dur: 0.11, v: 0.28, type: 'triangle', a: 0.004 }); },
+            dash: () => { noise({ ft: 'highpass', f0: 600, f1: 3000, dur: 0.2, v: 0.2, a: 0.04 }); tone({ f0: 300, f1: 120, dur: 0.16, v: 0.05, type: 'sine' }); },
+            hurt: () => { noise({ ft: 'lowpass', f0: 900, f1: 200, dur: 0.2, v: 0.28, a: 0.005 }); tone({ f0: 240, f1: 90, dur: 0.22, v: 0.26, type: 'square', lp: 900 }); },
+            playerDie: () => { tone({ f0: 300, f1: 50, dur: 1.0, v: 0.28, type: 'sawtooth', lp: 700, a: 0.02 }); noise({ ft: 'lowpass', f0: 600, f1: 80, dur: 0.9, v: 0.22 }); tone({ f0: 55, f1: 30, dur: 1.4, v: 0.25, a: 0.05 }); },
+            deny: () => tone({ f0: 170, f1: 120, dur: 0.13, v: 0.14, type: 'triangle', lp: 600 }),
+            shadowHit: () => tone({ f0: 330, f1: 140, dur: 0.16, v: 0.11, type: 'sine', vib: 14, vibD: 10 }),
+            shadowDie: () => { tone({ f0: 400, f1: 80, dur: 0.6, v: 0.13, type: 'sine', vib: 8, vibD: 20, a: 0.02 }); noise({ f0: 900, f1: 200, dur: 0.45, v: 0.09 }); },
+            hpPot: () => { tone({ f0: 420, f1: 900, dur: 0.13, v: 0.18 }); tone({ f0: 600, f1: 1200, dur: 0.14, v: 0.16, d: 0.09 }); noise({ f0: 1800, q: 2, dur: 0.1, v: 0.05, d: 0.02 }); },
+            mpPot: () => { [880, 1320, 1760].forEach((f, i) => bell(f, 0.09, i * 0.07)); },
+            chest: () => { tone({ f0: 180, f1: 420, dur: 0.3, v: 0.13, type: 'square', lp: 900, vib: 14, vibD: 25, a: 0.03 }); [1500, 2000, 2600].forEach((f, i) => bell(f, 0.07, 0.25 + i * 0.07)); },
+            sparkle: () => [1568, 2093, 2637, 3136].forEach((f, i) => bell(f, 0.07, i * 0.07)),
+            fanfare: () => {
+                const ch = [523.25, 659.25, 783.99, 1046.5];
+                ch.forEach((f, i) => { tone({ f0: f, dur: 0.5, v: 0.14, type: 'triangle', d: i * 0.11, a: 0.02 }); tone({ f0: f * 2, dur: 0.35, v: 0.04, d: i * 0.11 }); });
+                ch.forEach(f => tone({ f0: f, dur: 1.5, v: 0.07, type: 'triangle', d: 0.5, a: 0.06 }));
+                bell(2093, 0.05, 0.5);
+            },
+            gate: () => { noise({ f0: 300, f1: 3000, q: 0.8, dur: 0.6, v: 0.22, a: 0.12 }); tone({ f0: 180, f1: 900, dur: 0.55, v: 0.12, a: 0.1 }); tone({ f0: 55, dur: 0.7, v: 0.18, a: 0.05 }); },
+            clear: () => { noise({ ft: 'lowpass', f0: 500, f1: 150, dur: 0.55, v: 0.2 }); [523.25, 659.25, 783.99].forEach((f, i) => tone({ f0: f, dur: 0.5, v: 0.12, type: 'triangle', d: 0.2 + i * 0.1, a: 0.03 })); },
+            locked: () => { tone({ f0: 140, f1: 100, dur: 0.11, v: 0.18, type: 'triangle', lp: 500 }); noise({ f0: 2000, dur: 0.05, v: 0.1 }); },
+            equip: () => { tone({ f0: 1800, f1: 900, dur: 0.05, v: 0.1, type: 'triangle' }); noise({ ft: 'highpass', f0: 4000, dur: 0.04, v: 0.08 }); },
+            coin: () => { bell(1568, 0.1); bell(2093, 0.11, 0.07); },
+            upgrade: () => { tone({ f0: 660, f1: 990, dur: 0.14, v: 0.15, type: 'triangle', a: 0.02 }); tone({ f0: 880, f1: 1320, dur: 0.18, v: 0.15, type: 'triangle', d: 0.1, a: 0.02 }); bell(1760, 0.05, 0.18); },
+            click: () => tone({ f0: 900, f1: 700, dur: 0.04, v: 0.07 }),
+            step: soft => {
+                stepAlt ^= 1; const k = stepAlt ? 1 : 0.88;       // ก้าวซ้าย-ขวาเสียงต่างกันเล็กน้อย
+                noise({ ft: 'lowpass', f0: (soft ? 340 : 850) * k, f1: 180, dur: 0.07, v: soft ? 0.07 : 0.1, a: 0.006 });
+                if (!soft) tone({ f0: 95 * k, f1: 60, dur: 0.06, v: 0.05 });
+            },
+            // สกิล (ตั้งชื่อตาม fx)
+            cleave: () => L.swingHeavy(),
+            heal: () => [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => { tone({ f0: f, dur: 0.4, v: 0.11, d: i * 0.07, a: 0.02 }); bell(f * 2, 0.03, i * 0.07); }),
+            shield: () => { tone({ f0: 220, f1: 440, dur: 0.42, v: 0.13, type: 'sawtooth', lp: 1200, a: 0.05 }); tone({ f0: 1200, f1: 1600, dur: 0.4, v: 0.07, d: 0.05 }); noise({ f0: 4000, dur: 0.15, v: 0.07 }); },
+            nova: () => { tone({ f0: 100, f1: 28, dur: 0.8, v: 0.42, a: 0.01 }); noise({ ft: 'lowpass', f0: 800, f1: 100, dur: 0.7, v: 0.32 }); },
+            fireball: () => { noise({ f0: 900, f1: 200, q: 0.7, dur: 0.5, v: 0.28, a: 0.04 }); tone({ f0: 140, f1: 40, dur: 0.45, v: 0.28, type: 'sawtooth', lp: 500 }); },
+            meteor: () => {
+                noise({ ft: 'lowpass', f0: 150, f1: 400, dur: 0.8, v: 0.2, a: 0.4 }); tone({ f0: 60, f1: 90, dur: 0.8, v: 0.18, type: 'sawtooth', lp: 200, a: 0.4 });
+                noise({ ft: 'lowpass', f0: 900, f1: 60, dur: 1.0, v: 0.5, d: 0.8, a: 0.005, must: true }); tone({ f0: 80, f1: 22, dur: 1.0, v: 0.5, d: 0.8, a: 0.005, must: true });
+            },
+            blink: () => { tone({ f0: 1400, f1: 260, dur: 0.15, v: 0.15 }); noise({ ft: 'highpass', f0: 2500, dur: 0.1, v: 0.09 }); },
+            freeze: () => { for (let i = 0; i < 6; i++) bell(2000 + Math.random() * 2500, 0.05, i * 0.045); noise({ ft: 'highpass', f0: 5000, dur: 0.35, v: 0.09 }); },
+            extract: () => { tone({ f0: 180, f1: 640, dur: 0.65, v: 0.15, vib: 9, vibD: 20, a: 0.08 }); noise({ f0: 600, f1: 2000, dur: 0.65, v: 0.09, a: 0.1 }); },
+            summon: () => { tone({ f0: 70, dur: 0.55, v: 0.3, a: 0.04 }); tone({ f0: 160, f1: 260, dur: 0.55, v: 0.11, type: 'sawtooth', lp: 700, a: 0.05 }); noise({ f0: 1200, f1: 400, dur: 0.55, v: 0.09 }); },
+            army: () => { [110, 138, 165].forEach((f, i) => tone({ f0: f, dur: 1.0, v: 0.17, type: 'sawtooth', lp: 600, d: i * 0.08, a: 0.06 })); noise({ ft: 'lowpass', f0: 500, dur: 0.9, v: 0.18, a: 0.1 }); },
+            domain: () => { tone({ f0: 55, f1: 70, dur: 1.1, v: 0.28, type: 'sawtooth', lp: 300, a: 0.1 }); tone({ f0: 440, f1: 880, dur: 0.9, v: 0.06, vib: 7, vibD: 14, a: 0.15 }); },
+            skill: fx => {
+                const dk = DUCK[fx]; if (dk) duck(dk[0], dk[1]);
+                curRv = envRv * (WET[fx] === undefined ? 1.3 : WET[fx]);          // สกิลก้องกว่าปกติ
+                (L[fx] || L.swingHeavy)();
+            },
+            // เสียงมอนสเตอร์: 0 หมาป่า 1 ค้างคาว 2 แมงมุม 3 ซอมบี้ 4 ผี 5 บอส | mode: hurt die idle roar
+            voice: (type, mode, dist) => {
+                const die = mode === 'die', hurt = mode === 'hurt', roar = mode === 'roar';
+                const att = dist ? Math.max(0.25, 1 - dist / 650) : 1;
+                const m = (die || roar ? 1 : hurt ? 0.6 : 0.45) * att;
+                if (dist) curRv = Math.min(0.9, curRv * (1 + dist / 500));          // ยิ่งไกลยิ่งก้อง/อ้อมค้อม
+                if (type === 0) tone({ f0: die ? 260 : 190, f1: die ? 60 : 110, dur: die ? 0.5 : (hurt ? 0.14 : 0.35), v: 0.22 * m, type: 'sawtooth', lp: 900, vib: 28, vibD: 12, a: 0.02 });
+                else if (type === 1) { for (let i = 0; i < (die ? 3 : 2); i++) tone({ f0: 2300 + i * 300, f1: 3300, dur: 0.06, v: 0.11 * m, d: i * 0.07 }); if (die) tone({ f0: 3000, f1: 400, dur: 0.3, v: 0.09 * m, d: 0.2 }); }
+                else if (type === 2) { noise({ ft: 'highpass', f0: 3500, f1: 6000, dur: die ? 0.4 : 0.22, v: 0.13 * m }); tone({ f0: 900, f1: 300, dur: 0.08, v: 0.07 * m, type: 'square', lp: 1500 }); }
+                else if (type === 3) tone({ f0: die ? 130 : 95, f1: die ? 40 : 65, dur: die ? 0.8 : (hurt ? 0.25 : 0.7), v: 0.24 * m, type: 'sawtooth', lp: 420, vib: 5.5, vibD: 8, a: 0.04 });
+                else if (type === 4) { tone({ f0: 520, f1: die ? 180 : 700, dur: die ? 0.9 : 0.6, v: 0.13 * m, vib: 6, vibD: 25, a: 0.08 }); tone({ f0: 527, f1: die ? 190 : 690, dur: die ? 0.9 : 0.6, v: 0.1 * m, vib: 5, vibD: 25, a: 0.08 }); }
+                else {
+                    if (die || roar) duck(0.4, 1.6);
+                    tone({ f0: die ? 90 : 80, f1: die ? 28 : 45, dur: die ? 2.0 : (roar ? 1.4 : (hurt ? 0.3 : 1.1)), v: 0.42 * m, type: 'sawtooth', lp: 500, vib: 9, vibD: 14, a: 0.05 });
+                    noise({ ft: 'lowpass', f0: 400, f1: 80, dur: die ? 1.8 : 0.9, v: 0.3 * m });
+                    tone({ f0: 45, f1: 30, dur: die ? 1.6 : 0.8, v: 0.4 * m });
+                }
+            }
+        };
+
+        function run(name, args, pan) {
+            if (!ctx || muted) return;
+            const f = L[name]; if (!f) return;
+            curPan = pan || 0;
+            curRv = envRv * (WET[name] === undefined ? 1 : WET[name]);
+            const hm = HUM[name]; curHum = hm ? 1 + (Math.random() * 2 - 1) * hm : 1;
+            try { f(...args); } catch (e) {}
+            curPan = 0; curRv = envRv; curHum = 1;
+            const dk = DUCK[name]; if (dk) duck(dk[0], dk[1]);
+        }
+
+        // ---------- เสียงบรรยากาศ / ดนตรีสร้างสด ----------
+        function wantMode() {
+            try {
+                if (!gameState.floor) return 'town';
+                return isBossFloor(gameState.floor) ? 'boss' : 'dungeon';
+            } catch (e) { return 'town'; }
+        }
+        function buildAmb(m) {
+            const g = ctx.createGain(); g.gain.value = 0.0001; g.connect(ambBus);
+            g.gain.setTargetAtTime(1, ctx.currentTime, 1.4);                    // ค่อย ๆ ดังขึ้น (crossfade)
+            const nodes = [], ids = []; let alive = true, lp = null, dg = null;
+            const osc = (type, f, det, dest) => { const o = ctx.createOscillator(); o.type = type; o.frequency.value = f; if (det) o.detune.value = det; o.connect(dest); o.start(); nodes.push(o); return o; };
+            const lfo = (rate, depth, param) => { const l = ctx.createOscillator(), lg = ctx.createGain(); l.frequency.value = rate; lg.gain.value = depth; l.connect(lg); lg.connect(param); l.start(); nodes.push(l); };
+            const every = (a, b, fn) => {
+                const k = ids.length; ids.push(0);
+                const tick = () => {
+                    if (!alive) return;
+                    if (!muted && ctx.state === 'running') { try { fn(); } catch (e) {} }
+                    ids[k] = setTimeout(tick, (a + Math.random() * (b - a)) * 1000);
+                };
+                ids[k] = setTimeout(tick, (a + Math.random() * (b - a)) * 500);
+            };
+            const note = (f, dur, v, type, att, filt, f1, d) => {
+                const t0 = ctx.currentTime + (d || 0), o = ctx.createOscillator(), e = ctx.createGain();
+                o.type = type || 'sine'; o.frequency.setValueAtTime(f, t0);
+                if (f1) o.frequency.exponentialRampToValueAtTime(f1, t0 + dur);
+                let out = o;
+                if (filt) { const fl = ctx.createBiquadFilter(); fl.type = 'lowpass'; fl.frequency.value = filt; o.connect(fl); out = fl; }
+                const a = Math.min(att || 0.01, dur * 0.5);
+                e.gain.setValueAtTime(0.0001, t0); e.gain.exponentialRampToValueAtTime(v, t0 + a); e.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+                out.connect(e); e.connect(g); o.start(t0); o.stop(t0 + dur + 0.1);
+            };
+            const wind = (level, freq) => {
+                const ns = ctx.createBufferSource(); ns.buffer = noiseBuf; ns.loop = true;
+                const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = freq; bp.Q.value = 0.7;
+                const wg = ctx.createGain(); wg.gain.value = level;
+                lfo(0.07, level * 0.6, wg.gain); lfo(0.11, freq * 0.3, bp.frequency);
+                ns.connect(bp); bp.connect(wg); wg.connect(g); ns.start(); nodes.push(ns);
+            };
+
+            if (m === 'town') {
+                // เมือง: คอร์ดแพดอุ่น ๆ (Am–F–C–G) + เสียงกริ๊งเบา ๆ แบบเพนทาโทนิก
+                wind(0.02, 520);
+                const CH = [[110, 164.81, 220, 261.63], [87.31, 130.81, 174.61, 220], [130.81, 196, 261.63, 329.63], [98, 146.83, 196, 293.66]]; let ci = 0;
+                const chord = () => CH[ci++ % 4].forEach((f, i) => note(f, 9.5, 0.03, 'triangle', 2.4, 1100, 0, i * 0.25));
+                chord(); every(8, 8, chord);
+                const PENT = [440, 523.25, 587.33, 659.25, 783.99, 880, 1046.5];
+                every(2.4, 6, () => { if (Math.random() < 0.3) return; const f = PENT[Math.floor(Math.random() * PENT.length)]; note(f, 2.4, 0.028, 'sine', 0.012); note(f * 2.76, 0.9, 0.007, 'sine', 0.005); });
+            } else {
+                // ดันเจี้ยน/บอส: ดรอนต่ำที่เต้นช้า ๆ + ลมในถ้ำ
+                const boss = m === 'boss', base = boss ? 41.2 : 55;
+                lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = boss ? 230 : 180; lp.Q.value = 2.5;
+                dg = ctx.createGain(); dg.gain.value = boss ? 0.095 : 0.07; lp.connect(dg); dg.connect(g);
+                osc('sawtooth', base, 0, lp); osc('sawtooth', base, 11, lp); osc('sine', base * 2, 0, lp);
+                if (boss) osc('sawtooth', base * 1.4142, 0, lp);                 // ไทรโทน = ความไม่สบายใจ
+                lfo(0.045, 50, lp.frequency); lfo(0.08, 0.015, dg.gain);
+                wind(boss ? 0.04 : 0.03, boss ? 240 : 300);
+                if (boss) {
+                    every(1.2, 1.2, () => { note(58, 0.3, 0.2, 'sine', 0.01, 0, 36); note(52, 0.26, 0.12, 'sine', 0.01, 0, 34, 0.25); });   // หัวใจเต้น
+                    every(7, 14, () => note(220 + Math.random() * 80, 4, 0.02, 'sine', 2, 330));
+                } else {
+                    every(3.5, 9, () => { const f = 1500 + Math.random() * 900; note(f, 0.22, 0.03, 'sine', 0.004, 0, f * 0.7); });             // หยดน้ำ
+                    every(16, 34, () => { const f = 55 + Math.random() * 25; note(f, 6, 0.05, 'sine', 2.4, 400); note(f * 1.189, 6, 0.03, 'sine', 2.4, 400, 0, 0.3); });   // เสียงครางไกล ๆ
+                }
+            }
+            const tense = { v: false };
+            return {
+                g, tense,
+                setTense(t) {
+                    tense.v = t; if (!lp) return; const now = ctx.currentTime, boss = m === 'boss';
+                    lp.frequency.setTargetAtTime(t ? (boss ? 380 : 320) : (boss ? 230 : 180), now, 0.8);
+                    dg.gain.setTargetAtTime(t ? (boss ? 0.13 : 0.105) : (boss ? 0.095 : 0.07), now, 0.8);
+                },
+                stop() {
+                    alive = false; ids.forEach(clearTimeout);
+                    g.gain.setTargetAtTime(0, ctx.currentTime, 0.5);
+                    setTimeout(() => { nodes.forEach(n => { try { n.stop(); } catch (e) {} }); try { g.disconnect(); } catch (e) {} }, 3000);
+                }
+            };
+        }
+        function sync() {
+            if (!ctx) return;
+            const m = wantMode();
+            if (m !== mode) { mode = m; envRv = ENV[m]; curRv = envRv; if (amb) amb.stop(); amb = buildAmb(m); }
+            const paused = !!gameState.isPaused;
+            let tense = false;
+            if (m !== 'town' && !paused) { try { tense = enemies.some(e => !e.isDead && Math.hypot(e.x - player.x, e.y - player.y) < 480); } catch (e) {} }
+            if (amb && amb.tense.v !== tense) amb.setTense(tense);
+            ambBus.gain.setTargetAtTime(paused ? 0.55 : 1, ctx.currentTime, 0.25);
+        }
+
+        return {
+            init, ok, sync,
+            isMuted: () => muted,
+            toggle() { muted = !muted; if (master) master.gain.setTargetAtTime(muted ? 0 : vol, ctx.currentTime, 0.05); try { localStorage.setItem('dungeon_muted', muted ? '1' : '0'); } catch (e) {} return muted; },
+            play(name, ...args) { run(name, args, 0); },
+            // เล่นเสียงที่ตำแหน่งของ src (ศัตรู/เงา) → แพนซ้าย-ขวาตามตำแหน่งบนจอ
+            playAt(name, src, ...args) {
+                let pan = 0;
+                try { pan = Math.max(-0.85, Math.min(0.85, (src.x - player.x) / 450)); } catch (e) {}
+                run(name, args, pan);
+            }
+        };
+    })();
+    function toggleSound() {
+        sfx.init();
+        const m = sfx.toggle();
+        const b = document.getElementById('snd-btn'); if (b) b.textContent = m ? '🔇' : '🔊';
+        if (!m) sfx.play('click');
+    }
+    (function installSfx() {
+        const vtype = e => e.isBoss ? 5 : Math.max(0, ['🐺', '🦇', '🕷️', '🧟', '👻'].indexOf(e.emoji));
+        const atkSound = () => {
+            if (playerStats.cls === 'mage') return 'zap';
+            const w = playerStats.equipped.weapon, k = w ? (w.special || w.kind) : 'sword';
+            return ['axe', 'hammershield', 'quake', 'execute'].includes(k) ? 'swingHeavy' : ['spear', 'reach'].includes(k) ? 'stab' : 'swing';
+        };
+        const wrap = (proto, name, fn) => { const o = proto[name]; proto[name] = function (...a) { return fn.call(this, o, a); }; };
+        const wf = (name, fn) => { const o = window[name]; if (typeof o !== 'function') return; window[name] = function (...a) { return fn(o, a); }; };
+
+        wrap(Player.prototype, 'attack', function (o, a) {
+            const before = this.attackTimer, r = o.apply(this, a);
+            if (before <= 0 && this.attackTimer > 0) sfx.play(atkSound());
+            return r;
+        });
+        wrap(Player.prototype, 'update', function (o, a) {
+            const d0 = this.dashTimer, r = o.apply(this, a);
+            if (this.dashTimer > d0) sfx.play('dash');
+            return r;
+        });
+        wrap(Player.prototype, 'takeDamage', function (o, a) {
+            const h = playerStats.hp, r = o.apply(this, a);
+            if (playerStats.hp < h && sfx.ok('hurt', 150)) sfx.play('hurt');
+            return r;
+        });
+        wrap(Player.prototype, 'die', function (o, a) { sfx.play('playerDie'); return o.apply(this, a); });
+        wrap(Player.prototype, 'useSkill', function (o, a) {
+            const sk = playerStats.skills[a[0]], had = sk ? sk.cd : 1;
+            const r = o.apply(this, a);
+            if (sk && sk.level > 0 && had <= 0) {
+                if (sk.cd > 0) sfx.play('skill', sk.fx);
+                else if (playerStats.mana < sk.mp && sfx.ok('deny', 250)) sfx.play('deny');
+            }
+            return r;
+        });
+        wrap(Enemy.prototype, 'takeDamage', function (o, a) {
+            const was = this.isDead, r = o.apply(this, a);
+            if (!was) {
+                if (sfx.ok('hit', 45)) sfx.playAt('hit', this);
+                if (!this.isDead && sfx.ok('hurtVoice', 140)) sfx.playAt('voice', this, vtype(this), 'hurt');
+            }
+            return r;
+        });
+        wrap(Enemy.prototype, 'die', function (o, a) {
+            if (!this.isDead) { sfx.playAt('voice', this, vtype(this), 'die'); if (this.isBoss) sfx.play('nova'); }
+            return o.apply(this, a);
+        });
+        wrap(Enemy.prototype, 'update', function (o, a) {
+            const r = o.apply(this, a);
+            if (!this.isDead && !gameState.isPaused) {
+                this._vt = (this._vt === undefined ? 2 + Math.random() * 6 : this._vt) - a[0];
+                if (this._vt <= 0) {
+                    this._vt = 5 + Math.random() * 8;
+                    const d = Math.hypot(this.x - player.x, this.y - player.y);
+                    if (d < 550 && sfx.ok('idleVoice', 700)) sfx.playAt('voice', this, vtype(this), 'idle', d);
+                }
+            }
+            return r;
+        });
+        wrap(Ally.prototype, 'takeDamage', function (o, a) { if (sfx.ok('allyHit', 150)) sfx.playAt('shadowHit', this); return o.apply(this, a); });
+        wrap(Ally.prototype, 'die', function (o, a) { sfx.playAt('shadowDie', this); return o.apply(this, a); });
+
+        wf('loadFloor', (o, a) => { const r = o(...a); sfx.sync(); sfx.play('gate'); if (isBossFloor(a[0])) setTimeout(() => sfx.play('voice', 5, 'roar'), 450); return r; });
+        wf('openChest', (o, a) => { sfx.play('chest'); return o(...a); });
+        wf('showLootReveal', (o, a) => { sfx.play(a[0] && a[0].unique ? 'fanfare' : 'sparkle'); return o(...a); });
+        wf('equipItem', (o, a) => { const w0 = playerStats.equipped.weapon, a0 = playerStats.equipped.armor; const r = o(...a); if (w0 !== playerStats.equipped.weapon || a0 !== playerStats.equipped.armor) sfx.play('equip'); return r; });
+        wf('buyShopItem', (o, a) => { const g0 = playerStats.gold; const r = o(...a); if (playerStats.gold < g0) sfx.play(a[0] === 'heal' ? 'hpPot' : 'coin'); return r; });
+        wf('sellSpecificItem', (o, a) => { const g0 = playerStats.gold; const r = o(...a); if (playerStats.gold > g0) sfx.play('coin'); return r; });
+        wf('sellAllCommon', (o, a) => { const g0 = playerStats.gold; const r = o(...a); if (playerStats.gold > g0) sfx.play('coin'); return r; });
+        wf('upgradeStat', (o, a) => { const p0 = playerStats.statPoints; const r = o(...a); if (playerStats.statPoints < p0) sfx.play('upgrade'); return r; });
+        wf('upgradeSkill', (o, a) => { const p0 = playerStats.skillPoints; const r = o(...a); if (playerStats.skillPoints < p0) sfx.play('upgrade'); return r; });
+        wf('changeClass', (o, a) => { const c0 = playerStats.cls; const r = o(...a); if (playerStats.cls !== c0) sfx.play('fanfare'); return r; });
+        wf('confirmClass', (o, a) => { sfx.play('fanfare'); return o(...a); });
+
+        ['pointerdown', 'keydown'].forEach(ev => window.addEventListener(ev, () => sfx.init()));
+        document.addEventListener('click', e => { if (e.target.closest && e.target.closest('button') && sfx.ok('click', 60)) sfx.play('click'); });
+        window.addEventListener('load', () => { const b = document.getElementById('snd-btn'); if (b) b.textContent = sfx.isMuted() ? '🔇' : '🔊'; });
+    })();
 
     window.onload = init;
 
 </script>
 </body>
 </html>
-```eof
