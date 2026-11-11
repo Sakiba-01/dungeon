@@ -4,8 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>dungeon Solo</title>
-    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- OFFLINE-LIBS-START -->
+    <!-- ลำดับการโหลด: ไฟล์ในเครื่อง (โฟลเดอร์เดียวกับเกม) ก่อน → ถ้าไม่มีค่อยโหลดจากอินเทอร์เน็ต -->
+    <script src="tailwind.js"></script>
+    <script>window.tailwind || document.write('<script src="https://cdn.tailwindcss.com/3.4.17"><\/script>');</script>
+    <script src="three.min.js"></script>
+    <script>window.THREE || document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>');</script>
+    <!-- OFFLINE-LIBS-END -->
     <style>
         body, html {
             margin: 0; padding: 0; width: 100vw; height: 100vh;
